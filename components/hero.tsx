@@ -74,6 +74,7 @@ export function Hero() {
                     width={120}
                     height={120}
                     className="opacity-20"
+                    style={{ width: 'auto', height: 'auto' }}
                   />
                 </div>
                 

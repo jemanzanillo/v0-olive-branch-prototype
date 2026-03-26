@@ -12,7 +12,7 @@ export function Footer() {
               alt="OliveBranch"
               width={150}
               height={32}
-              className="h-8 w-auto"
+              style={{ height: '32px', width: 'auto' }}
             />
             <p className="text-sm text-muted-foreground leading-relaxed">
               AI-powered workplace conflict resolution. Private, fair, and focused on repair.

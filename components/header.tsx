@@ -18,7 +18,7 @@ export function Header() {
             alt="OliveBranch"
             width={180}
             height={40}
-            className="h-8 w-auto"
+            style={{ height: '32px', width: 'auto' }}
           />
         </Link>
 
