@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -9,14 +9,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  CheckCircle2, 
-  Scale, 
-  MessageSquare, 
-  Brain, 
-  Shield, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Scale,
+  MessageSquare,
+  Leaf,
+  Globe,
+  Upload,
+  X,
+  Brain,
+  Shield,
   AlertTriangle,
   User,
   Users,
@@ -95,7 +99,7 @@ const keywordQuestions: Record<string, { question: string; placeholder: string }
   ],
 }
 
-const availableKeywords = Object.keys(keywordQuestions)
+const availableKeywords = Object.keys(keywordQuestions).sort()
 
 // Dynamic follow-up questions for Blake based on Karen's input
 const generateBlakeFollowups = (karenResponses: Record<string, string>, keywords: string[]): { question: string; placeholder: string }[] => {
@@ -186,6 +190,20 @@ export default function DemoPage() {
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [selectedVerdict, setSelectedVerdict] = useState<string | null>(null)
 
+  // New state from feedback improvements
+  const [colleagueEmailValid, setColleagueEmailValid] = useState(true)
+  const [toneVersion, setToneVersion] = useState(0)
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
+  const [evidenceFileError, setEvidenceFileError] = useState("")
+  const [verdictSelections, setVerdictSelections] = useState<{ karen: string | null; blake: string | null }>({ karen: null, blake: null })
+  const [postVerdictState, setPostVerdictState] = useState<"selecting" | "consensus" | "deadlock" | "regenerating" | "escalated">("selecting")
+  const [companyPolicy, setCompanyPolicy] = useState("")
+  const [policyFile, setPolicyFile] = useState<File | null>(null)
+  const [policySaved, setPolicySaved] = useState(false)
+  const [bobView, setBobView] = useState<"anonymized" | "full-disclosure">("anonymized")
+  const evidenceFileRef = useRef<HTMLInputElement>(null)
+  const policyFileRef = useRef<HTMLInputElement>(null)
+
   // Get question pages grouped by topic
   const getQuestionPages = () => {
     const pages: { title: string; questions: { question: string; placeholder: string }[] }[] = [
@@ -214,7 +232,36 @@ export default function DemoPage() {
     const allText = Object.values(karenResponses).join(" ")
     const analysis = analyzeTone(allText)
     setToneAnalysis(analysis)
+    setToneVersion(0)
     setKarenStep("tone-review")
+  }
+
+  // Generate another de-escalated version (demo variation)
+  const handleRegenerateTone = () => {
+    if (!toneAnalysis) return
+    const variants = [
+      " I believe a constructive conversation would help both parties reach a fair understanding.",
+      " I am confident we can resolve this professionally with open dialogue.",
+      " Finding a mutually agreeable path forward is the goal here.",
+    ]
+    const next = (toneVersion + 1) % variants.length
+    setToneVersion(next)
+    setToneAnalysis({
+      ...toneAnalysis,
+      refinedText: toneAnalysis.refinedText.replace(/ I believe.*|I am confident.*|Finding a mutually.*/, "").trimEnd() + variants[next],
+    })
+  }
+
+  // Handle evidence file selection (10 MB limit)
+  const handleEvidenceFile = (file: File | null) => {
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setEvidenceFileError("File exceeds 10 MB limit. Please choose a smaller file.")
+      setEvidenceFile(null)
+      return
+    }
+    setEvidenceFileError("")
+    setEvidenceFile(file)
   }
 
   // Handle consent and submission
@@ -365,8 +412,8 @@ width={150}
           </div>
         </header>
 
-        {/* Progress */}
-        <div className="border-b border-border bg-secondary/30">
+        {/* Progress - sticky so it stays visible while scrolling */}
+        <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-foreground">Your Progress</span>
@@ -404,23 +451,40 @@ width={150}
               </div>
 
               <div className="space-y-6">
+                <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Important:</span> Enter your <span className="font-medium text-foreground">colleague&apos;s</span> details below — not your own.
+                </div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-foreground">Colleague&apos;s Name</label>
+                    <label className="block text-sm font-semibold text-foreground">Colleague&apos;s Name</label>
                     <Input
-                      placeholder="Blake Johnson"
+                      placeholder="e.g. Blake Johnson"
                       value={colleagueName}
                       onChange={(e) => setColleagueName(e.target.value)}
                     />
+                    <p className="text-xs text-muted-foreground">The person your concern is about</p>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-foreground">Colleague&apos;s Email</label>
+                    <label className="block text-sm font-semibold text-foreground">Colleague&apos;s Email</label>
                     <Input
                       type="email"
-                      placeholder="blake@company.com"
+                      placeholder="e.g. blake@company.com"
                       value={colleagueEmail}
-                      onChange={(e) => setColleagueEmail(e.target.value)}
+                      onChange={(e) => {
+                        setColleagueEmail(e.target.value)
+                        setColleagueEmailValid(true)
+                      }}
+                      onBlur={() => {
+                        if (colleagueEmail) {
+                          setColleagueEmailValid(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(colleagueEmail))
+                        }
+                      }}
+                      className={!colleagueEmailValid ? "border-red-400 focus-visible:ring-red-400" : ""}
                     />
+                    {!colleagueEmailValid && (
+                      <p className="text-xs text-red-500">Please enter a valid email address.</p>
+                    )}
+                    {colleagueEmailValid && <p className="text-xs text-muted-foreground">So we can notify them securely</p>}
                   </div>
                 </div>
 
@@ -460,7 +524,7 @@ width={150}
                   size="lg" 
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={() => { setCurrentQuestionPage(0); setKarenStep("questions") }}
-                  disabled={!colleagueName || !colleagueEmail || selectedKeywords.length === 0}
+                  disabled={!colleagueName || !colleagueEmail || !colleagueEmailValid || selectedKeywords.length === 0}
                 >
                   Continue
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -475,7 +539,10 @@ width={150}
             const page = pages[currentQuestionPage]
             const isFirst = currentQuestionPage === 0
             const isLast = currentQuestionPage === pages.length - 1
-            const pageAnswered = page.questions.some(q => karenResponses[q.question]?.trim())
+            // Page 0: both "What happened?" and "What outcome do you want?" are mandatory
+            const pageAnswered = currentQuestionPage === 0
+              ? !!(karenResponses["What happened?"]?.trim() && karenResponses["What outcome do you want?"]?.trim())
+              : page.questions.some(q => karenResponses[q.question]?.trim())
             return (
               <div className="space-y-8">
                 <div className="space-y-2">
@@ -513,9 +580,14 @@ width={150}
                     {page.title}
                   </p>
                   <div className="space-y-6">
-                    {page.questions.map((q, index) => (
+                    {page.questions.map((q, index) => {
+                      const isMandatory = currentQuestionPage === 0 && (q.question === "What happened?" || q.question === "What outcome do you want?")
+                      return (
                       <div key={index} className="space-y-2">
-                        <label className="block font-medium text-foreground">{q.question}</label>
+                        <label className="block font-medium text-foreground">
+                          {q.question}
+                          {isMandatory && <span className="text-red-500 ml-1">*</span>}
+                        </label>
                         <Textarea
                           placeholder={q.placeholder}
                           className="min-h-[100px] resize-none bg-card"
@@ -523,7 +595,8 @@ width={150}
                           onChange={(e) => setKarenResponses({ ...karenResponses, [q.question]: e.target.value })}
                         />
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -601,25 +674,37 @@ width={150}
                 </div>
               </div>
 
+              {/* Original → Refined comparison */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-foreground">Your Original Message</h3>
+                <div className="bg-secondary/60 rounded-lg border border-border p-4">
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap text-sm">
+                    {toneAnalysis.originalText}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <div className="flex-1 h-px bg-border" />
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <Sparkles className="h-4 w-4" />
+                  De-escalated by OliveBranch Filter
+                </div>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
               {/* Flagged Phrases */}
               {toneAnalysis.flaggedPhrases.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="font-medium text-foreground">Suggested Refinements</h3>
-                  <div className="space-y-3">
+                <div className="space-y-3">
+                  <h3 className="font-medium text-foreground text-sm">Refinements Applied</h3>
+                  <div className="space-y-2">
                     {toneAnalysis.flaggedPhrases.map((item, index) => (
-                      <div key={index} className="bg-card rounded-lg border border-border p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center shrink-0">
-                            <span className="text-xs font-bold text-yellow-700">{index + 1}</span>
-                          </div>
-                          <div className="flex-1 space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="line-through text-red-600 text-sm">&quot;{item.phrase}&quot;</span>
-                              <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-primary text-sm font-medium">&quot;{item.suggestion}&quot;</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">Issue: {item.issue}</p>
-                          </div>
+                      <div key={index} className="bg-card rounded-lg border border-border px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="line-through text-red-500 text-sm">&quot;{item.phrase}&quot;</span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-primary text-sm font-medium">&quot;{item.suggestion}&quot;</span>
+                          <span className="text-xs text-muted-foreground ml-auto">{item.issue}</span>
                         </div>
                       </div>
                     ))}
@@ -629,7 +714,18 @@ width={150}
 
               {/* Refined Summary */}
               <div className="space-y-3">
-                <h3 className="font-medium text-foreground">Your Refined Summary</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-foreground">Refined Version</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-xs"
+                    onClick={handleRegenerateTone}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Generate Another Version
+                  </Button>
+                </div>
                 <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
                   <p className="text-foreground leading-relaxed whitespace-pre-wrap">
                     {toneAnalysis.refinedText}
@@ -645,8 +741,8 @@ width={150}
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Edit Responses
                 </Button>
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={() => setKarenStep("consent")}
                 >
@@ -758,10 +854,18 @@ width={150}
               />
             </Link>
             <div className="flex items-center gap-4">
-              <Badge variant="outline" className="gap-1 border-accent text-accent">
-                <MessageSquare className="h-3 w-3" />
-                Blake (Responder)
-              </Badge>
+              {/* F1: Switch badge to Karen when she's answering the final clarification questions */}
+              {analysisStep === "clarification-karen" ? (
+                <Badge variant="outline" className="gap-1">
+                  <User className="h-3 w-3" />
+                  Karen (Initiator)
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="gap-1 border-accent text-accent">
+                  <Leaf className="h-3 w-3" />
+                  Blake (Responder)
+                </Badge>
+              )}
               <Button variant="ghost" size="sm" onClick={() => setSelectedPersona(null)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Switch Role
@@ -773,53 +877,82 @@ width={150}
         <main className="container mx-auto px-4 py-12 max-w-3xl">
           {/* Notification */}
           {blakeStep === "notification" && (
-            <div className="space-y-8">
-              <div className="bg-accent/10 border border-accent/20 rounded-xl p-6 space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                    <MessageSquare className="h-6 w-6 text-accent" />
+            <div className="space-y-6">
+              {/* Demo context note */}
+              <div className="bg-secondary/50 border border-border rounded-lg px-4 py-2 text-xs text-muted-foreground text-center">
+                📧 <span className="font-medium">Demo context:</span> This is what Blake sees in their email inbox.
+              </div>
+
+              {/* Email chrome wrapper */}
+              <div className="rounded-xl border-2 border-border overflow-hidden shadow-sm">
+                {/* Email header */}
+                <div className="bg-secondary/40 border-b border-border px-6 py-4 space-y-1 font-mono text-sm">
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground w-16 shrink-0">From:</span>
+                    <span className="text-foreground">noreply@olivebranch.ai</span>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-serif text-lg font-semibold text-foreground">
-                      New Resolution Request
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      A colleague has initiated a discussion about &quot;Company Credit Card&quot; usage.
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground w-16 shrink-0">To:</span>
+                    <span className="text-foreground">blake@company.com</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground w-16 shrink-0">Subject:</span>
+                    <span className="text-foreground font-semibold font-sans">Someone has extended an olive branch to you 🌿</span>
+                  </div>
+                </div>
+
+                {/* Email body */}
+                <div className="bg-card px-6 py-8 space-y-6">
+                  {/* Notification card */}
+                  <div className="bg-accent/10 border border-accent/20 rounded-xl p-5 space-y-3">
+                    <div className="flex items-start gap-4">
+                      <div className="w-11 h-11 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                        <Leaf className="h-5 w-5 text-accent" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-serif text-lg font-semibold text-foreground">
+                          Someone extended an olive branch to you
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          A colleague has reached out through OliveBranch to resolve a workplace concern together.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h2 className="font-serif text-2xl font-semibold text-foreground">
+                      A Colleague Has Extended an Olive Branch to You
+                    </h2>
+                    <p className="text-muted-foreground leading-relaxed">
+                      A colleague would like to work through a concern with you privately using OliveBranch —
+                      a neutral platform for fair, confidential workplace resolutions without immediate HR escalation.
                     </p>
                   </div>
+
+                  <div className="bg-secondary/50 rounded-xl border border-border p-5 space-y-3">
+                    <h3 className="font-medium text-foreground">Summary of Concern</h3>
+                    <p className="text-muted-foreground leading-relaxed text-sm">
+                      There appears to be a misunderstanding regarding a recent company credit card purchase.
+                      The other party would like to discuss the situation and find a mutually agreeable resolution.
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Badge variant="secondary">Company Expenses</Badge>
+                      <Badge variant="secondary">Resource Allocation</Badge>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground gap-2"
+                    onClick={() => setBlakeStep("response")}
+                  >
+                    <Globe className="h-5 w-5" />
+                    Open in OliveBranch
+                    <ArrowRight className="h-5 w-5" />
+                  </Button>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
-                  You&apos;ve Been Invited to Resolve a Workplace Concern
-                </h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  A colleague has raised a concern and would like to work toward a resolution with you. 
-                  OliveBranch helps facilitate fair, private discussions without escalation to HR unless necessary.
-                </p>
-              </div>
-
-              <div className="bg-card rounded-xl border border-border p-6 space-y-4">
-                <h3 className="font-medium text-foreground">Summary of Concern</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  There appears to be a misunderstanding regarding a recent company credit card purchase. 
-                  The other party would like to discuss the situation and find a mutually agreeable resolution.
-                </p>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Badge variant="secondary">Company Expenses</Badge>
-                  <Badge variant="secondary">Resource Allocation</Badge>
-                </div>
-              </div>
-
-              <Button 
-                size="lg" 
-                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                onClick={() => setBlakeStep("response")}
-              >
-                Provide My Perspective
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
             </div>
           )}
 
@@ -835,6 +968,29 @@ width={150}
                 </p>
               </div>
 
+              {/* Summary of Concern panel (E1) */}
+              <details className="group bg-secondary/40 rounded-xl border border-border overflow-hidden" open>
+                <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">What your colleague shared</span>
+                    <Badge variant="secondary" className="text-xs">Context</Badge>
+                  </div>
+                  <span className="text-xs text-muted-foreground group-open:hidden">Show</span>
+                  <span className="text-xs text-muted-foreground hidden group-open:inline">Hide</span>
+                </summary>
+                <div className="px-5 pb-5 space-y-3 border-t border-border pt-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    There appears to be a misunderstanding regarding a recent company credit card purchase.
+                    The other party would like to discuss the situation and find a mutually agreeable resolution.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">Company Expenses</Badge>
+                    <Badge variant="secondary">Resource Allocation</Badge>
+                  </div>
+                </div>
+              </details>
+
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="block font-medium text-foreground">What is your understanding of the situation?</label>
@@ -846,14 +1002,49 @@ width={150}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block font-medium text-foreground">Do you have any supporting evidence?</label>
+                {/* Evidence field with file upload (E2) */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <label className="block font-medium text-foreground">Supporting Evidence</label>
+                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">Optional</span>
+                  </div>
                   <Textarea
-                    placeholder="Receipts, emails, project requirements, approvals..."
-                    className="min-h-[100px] resize-none bg-card"
+                    placeholder="Describe any supporting evidence: receipts, emails, project requirements, approvals..."
+                    className="min-h-[80px] resize-none bg-card"
                     value={blakeResponses["evidence"] || ""}
                     onChange={(e) => setBlakeResponses({ ...blakeResponses, evidence: e.target.value })}
                   />
+                  {/* File upload area */}
+                  <div>
+                    <input
+                      ref={evidenceFileRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                      className="hidden"
+                      onChange={(e) => handleEvidenceFile(e.target.files?.[0] ?? null)}
+                    />
+                    {evidenceFile ? (
+                      <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+                        <FileText className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-sm text-foreground flex-1 truncate">{evidenceFile.name}</span>
+                        <button
+                          onClick={() => { setEvidenceFile(null); if (evidenceFileRef.current) evidenceFileRef.current.value = "" }}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => evidenceFileRef.current?.click()}
+                        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Attach a document (PDF, Word, image — max 10 MB)
+                      </button>
+                    )}
+                    {evidenceFileError && <p className="text-xs text-red-500 mt-1">{evidenceFileError}</p>}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -872,8 +1063,8 @@ width={150}
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-accent hover:bg-accent/90 text-accent-foreground"
                   onClick={() => setBlakeStep("followup")}
                   disabled={!blakeResponses.understanding}
@@ -1042,143 +1233,242 @@ width={150}
                     </p>
                   </div>
 
-                  <div className="grid gap-4">
-                    {/* Outcome A - Logic Favors Karen */}
-                    <button
-                      onClick={() => setSelectedVerdict("A")}
-                      className={`text-left bg-card rounded-xl border-2 p-6 transition-all ${
-                        selectedVerdict === "A" ? "border-primary shadow-lg" : "border-border hover:border-primary/30"
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="font-serif font-bold text-primary">A</span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-serif text-lg font-semibold text-foreground mb-1">
-                            Logic Favors Karen
-                          </h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                            Based on company guidelines, Karen&apos;s argument regarding the credit card policy is stronger. 
-                            The purchase appears to fall outside approved categories.
-                          </p>
-                          <div className="text-xs text-primary font-medium">
-                            Suggested: Blake to follow pre-approval process for future purchases
+                  {/* ── Consensus reached ── */}
+                  {postVerdictState === "consensus" && selectedVerdict && (
+                    <div className="space-y-6">
+                      <div className="bg-primary/5 border border-primary/30 rounded-xl p-6 text-center space-y-2">
+                        <CheckCircle2 className="h-10 w-10 text-primary mx-auto" />
+                        <h3 className="font-serif text-xl font-semibold text-foreground">Case Resolved ✓</h3>
+                        <p className="text-muted-foreground text-sm">Both parties accepted <strong>Outcome {selectedVerdict}</strong>. The case is now closed.</p>
+                      </div>
+                      <div className="bg-secondary rounded-xl border border-border p-6 space-y-4">
+                        <h4 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
+                          <Leaf className="h-5 w-5 text-primary" />
+                          The &quot;Repair&quot; Package
+                        </h4>
+                        <div className="grid sm:grid-cols-3 gap-4">
+                          <div className="bg-card rounded-lg p-4">
+                            <h5 className="font-medium text-foreground text-sm mb-2">Reasoning Breakdown</h5>
+                            <p className="text-xs text-muted-foreground">
+                              {selectedVerdict === "A" && "Company policy Section 4.2 specifies pre-approval for purchases over $100."}
+                              {selectedVerdict === "B" && "Both parties operated under reasonable but different interpretations of guidelines."}
+                              {selectedVerdict === "C" && "Client-facing expenses have broader approval under Section 4.5."}
+                            </p>
+                          </div>
+                          <div className="bg-card rounded-lg p-4">
+                            <h5 className="font-medium text-foreground text-sm mb-2">Suggested Actions</h5>
+                            <p className="text-xs text-muted-foreground">
+                              {selectedVerdict === "A" && "Blake submits retroactive approval; both review expense policy together."}
+                              {selectedVerdict === "B" && "Schedule 30-min sync to draft new pre-approval workflow for the team."}
+                              {selectedVerdict === "C" && "Karen requests a walkthrough of current client protocols from Blake."}
+                            </p>
+                          </div>
+                          <div className="bg-card rounded-lg p-4">
+                            <h5 className="font-medium text-foreground text-sm mb-2">Communication Script</h5>
+                            <p className="text-xs text-muted-foreground italic">
+                              &quot;I&apos;ve had a chance to reflect on our recent discussion. I think we both want what&apos;s best for the team. Would you have 15 minutes this week to talk through a path forward?&quot;
+                            </p>
                           </div>
                         </div>
-                        {selectedVerdict === "A" && (
-                          <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
-                        )}
                       </div>
-                    </button>
-
-                    {/* Outcome B - Compromise */}
-                    <button
-                      onClick={() => setSelectedVerdict("B")}
-                      className={`text-left bg-card rounded-xl border-2 p-6 transition-all relative ${
-                        selectedVerdict === "B" ? "border-primary shadow-lg" : "border-border hover:border-primary/30"
-                      }`}
-                    >
-                      <div className="absolute -top-3 left-6 bg-accent text-accent-foreground text-xs font-medium px-3 py-1 rounded-full">
-                        Recommended
-                      </div>
-                      <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
-                          <Scale className="h-5 w-5 text-primary-foreground" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-serif text-lg font-semibold text-foreground mb-1">
-                            The Middle Ground
-                          </h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                            Both parties share accountability: Karen&apos;s communication could have been clearer, 
-                            and Blake&apos;s purchase was technically outside standard policy but had legitimate intent.
-                          </p>
-                          <div className="text-xs text-primary font-medium">
-                            Suggested: Establish a new pre-approval process for miscellaneous items
-                          </div>
-                        </div>
-                        {selectedVerdict === "B" && (
-                          <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Outcome C - Logic Favors Blake */}
-                    <button
-                      onClick={() => setSelectedVerdict("C")}
-                      className={`text-left bg-card rounded-xl border-2 p-6 transition-all ${
-                        selectedVerdict === "C" ? "border-primary shadow-lg" : "border-border hover:border-primary/30"
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="font-serif font-bold text-primary">C</span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-serif text-lg font-semibold text-foreground mb-1">
-                            Logic Favors Blake
-                          </h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                            The purchase was for a legitimate client event, which falls under approved business purposes. 
-                            Karen may not have had full context about current team needs.
-                          </p>
-                          <div className="text-xs text-primary font-medium">
-                            Suggested: Karen to review updated team requirements and client protocols
-                          </div>
-                        </div>
-                        {selectedVerdict === "C" && (
-                          <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
-                        )}
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Repair Package */}
-                  {selectedVerdict && (
-                    <div className="bg-secondary rounded-xl border border-border p-6 space-y-4">
-                      <h4 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2">
-                        <ArrowRight className="h-5 w-5 text-accent" />
-                        The &quot;Repair&quot; Package
-                      </h4>
-                      <div className="grid sm:grid-cols-3 gap-4">
-                        <div className="bg-card rounded-lg p-4">
-                          <h5 className="font-medium text-foreground text-sm mb-2">Reasoning Breakdown</h5>
-                          <p className="text-xs text-muted-foreground">
-                            {selectedVerdict === "A" && "Company policy Section 4.2 specifies pre-approval for purchases over $100."}
-                            {selectedVerdict === "B" && "Both parties operated under reasonable but different interpretations of guidelines."}
-                            {selectedVerdict === "C" && "Client-facing expenses have broader approval under Section 4.5."}
-                          </p>
-                        </div>
-                        <div className="bg-card rounded-lg p-4">
-                          <h5 className="font-medium text-foreground text-sm mb-2">Suggested Actions</h5>
-                          <p className="text-xs text-muted-foreground">
-                            {selectedVerdict === "A" && "Blake submits retroactive approval; both review expense policy together."}
-                            {selectedVerdict === "B" && "Schedule 30-min sync to draft new pre-approval workflow for the team."}
-                            {selectedVerdict === "C" && "Karen requests a walkthrough of current client protocols from Blake."}
-                          </p>
-                        </div>
-                        <div className="bg-card rounded-lg p-4">
-                          <h5 className="font-medium text-foreground text-sm mb-2">Communication Script</h5>
-                          <p className="text-xs text-muted-foreground italic">
-                            &quot;I&apos;ve had a chance to reflect on our recent discussion. I think we both want what&apos;s best for the team. Would you have 15 minutes this week to talk through a path forward?&quot;
-                          </p>
-                        </div>
+                      <div className="flex justify-center">
+                        <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => setSelectedPersona(null)}>
+                          Complete Demo
+                          <CheckCircle2 className="ml-2 h-5 w-5" />
+                        </Button>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex justify-center pt-4">
-                    <Button 
-                      size="lg" 
-                      className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                      disabled={!selectedVerdict}
-                      onClick={() => setSelectedPersona(null)}
-                    >
-                      Complete Demo
-                      <CheckCircle2 className="ml-2 h-5 w-5" />
-                    </Button>
-                  </div>
+                  {/* ── Deadlock ── */}
+                  {postVerdictState === "deadlock" && (
+                    <div className="space-y-6">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center space-y-2">
+                        <AlertTriangle className="h-10 w-10 text-yellow-600 mx-auto" />
+                        <h3 className="font-serif text-xl font-semibold text-foreground">Deadlock Reached</h3>
+                        <p className="text-muted-foreground text-sm">Neither party accepted a shared outcome. Choose how to proceed.</p>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <button
+                          onClick={() => { setPostVerdictState("regenerating"); setSelectedVerdict(null); simulateAnalysis() }}
+                          className="bg-card rounded-xl border-2 border-border hover:border-primary/40 p-6 text-left transition-all space-y-2"
+                        >
+                          <RefreshCw className="h-6 w-6 text-primary" />
+                          <h4 className="font-medium text-foreground">Regenerate Solutions</h4>
+                          <p className="text-sm text-muted-foreground">Ask the AI to produce a new set of resolution options based on the full context.</p>
+                        </button>
+                        <button
+                          onClick={() => { setPostVerdictState("escalated"); setBobView("full-disclosure") }}
+                          className="bg-card rounded-xl border-2 border-border hover:border-red-300 p-6 text-left transition-all space-y-2"
+                        >
+                          <AlertTriangle className="h-6 w-6 text-red-500" />
+                          <h4 className="font-medium text-foreground">Escalate to HR</h4>
+                          <p className="text-sm text-muted-foreground">Initiate the Bob Protocol — HR receives full disclosure to mediate directly.</p>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Escalated / Bob Protocol ── */}
+                  {postVerdictState === "escalated" && (
+                    <div className="space-y-6">
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-6 space-y-3">
+                        <div className="flex items-center gap-2 text-red-700">
+                          <AlertTriangle className="h-5 w-5" />
+                          <span className="font-semibold">Bob Protocol Initiated</span>
+                        </div>
+                        <p className="text-sm text-red-700">
+                          The case has been escalated to HR. Bob now has <strong>Full Disclosure</strong> access — all identities and responses are visible to facilitate direct mediation.
+                        </p>
+                      </div>
+                      <div className="bg-secondary/50 rounded-lg border border-border p-4 text-sm text-muted-foreground">
+                        Switch to <strong>Bob (HR Manager)</strong> in the demo to see the Full Disclosure view.
+                      </div>
+                      <div className="flex justify-center">
+                        <Button variant="outline" onClick={() => setSelectedPersona(null)}>
+                          Switch to Bob&apos;s View
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Card selection (default + after regenerate) ── */}
+                  {(postVerdictState === "selecting" || postVerdictState === "regenerating") && (
+                    <>
+                      {postVerdictState === "regenerating" && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 text-sm text-muted-foreground text-center">
+                          <RefreshCw className="h-4 w-4 inline mr-1" />
+                          New solution set generated based on full context.
+                        </div>
+                      )}
+
+                      <p className="text-sm text-muted-foreground text-center">
+                        <span className="font-medium text-foreground">Demo:</span> You are in Karen&apos;s view. Accept an outcome — Blake&apos;s response will be simulated.
+                      </p>
+
+                      {/* G1: 3-column grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                        {/* Outcome A */}
+                        <div className={`relative bg-card rounded-xl border-2 p-5 transition-all flex flex-col gap-4 ${
+                          verdictSelections.karen === "A" ? "border-primary shadow-lg" : "border-border"
+                        }`}>
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <span className="font-serif font-bold text-primary text-sm">A</span>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">Logic Favors Karen</h3>
+                              <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                                Based on company guidelines, Karen&apos;s argument regarding the credit card policy is stronger. The purchase appears to fall outside approved categories.
+                              </p>
+                              <div className="text-xs text-primary font-medium">Suggested: Blake to follow pre-approval process</div>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className={verdictSelections.karen === "A" ? "bg-primary text-primary-foreground w-full" : "w-full"}
+                            variant={verdictSelections.karen === "A" ? "default" : "outline"}
+                            onClick={() => {
+                              setVerdictSelections({ karen: "A", blake: "B" })
+                              setSelectedVerdict("A")
+                              setTimeout(() => setPostVerdictState("deadlock"), 1200)
+                            }}
+                            disabled={!!verdictSelections.karen}
+                          >
+                            {verdictSelections.karen === "A" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome A"}
+                          </Button>
+                        </div>
+
+                        {/* Outcome B */}
+                        <div className={`relative bg-card rounded-xl border-2 p-5 transition-all flex flex-col gap-4 ${
+                          verdictSelections.karen === "B" ? "border-primary shadow-lg" : "border-border"
+                        }`}>
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">
+                            Recommended
+                          </div>
+                          <div className="flex items-start gap-3 mt-1">
+                            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center shrink-0">
+                              <Scale className="h-4 w-4 text-primary-foreground" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">The Middle Ground</h3>
+                              <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                                Both parties share accountability: Karen&apos;s communication could have been clearer, and Blake&apos;s purchase had legitimate intent.
+                              </p>
+                              <div className="text-xs text-primary font-medium">Suggested: New pre-approval process for the team</div>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className={verdictSelections.karen === "B" ? "bg-primary text-primary-foreground w-full" : "w-full"}
+                            variant={verdictSelections.karen === "B" ? "default" : "outline"}
+                            onClick={() => {
+                              setVerdictSelections({ karen: "B", blake: "B" })
+                              setSelectedVerdict("B")
+                              setTimeout(() => setPostVerdictState("consensus"), 1200)
+                            }}
+                            disabled={!!verdictSelections.karen}
+                          >
+                            {verdictSelections.karen === "B" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome B"}
+                          </Button>
+                        </div>
+
+                        {/* Outcome C */}
+                        <div className={`relative bg-card rounded-xl border-2 p-5 transition-all flex flex-col gap-4 ${
+                          verdictSelections.karen === "C" ? "border-primary shadow-lg" : "border-border"
+                        }`}>
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <span className="font-serif font-bold text-primary text-sm">C</span>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">Logic Favors Blake</h3>
+                              <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                                The purchase was for a legitimate client event under approved business purposes. Karen may not have had full context about team needs.
+                              </p>
+                              <div className="text-xs text-primary font-medium">Suggested: Karen to review client protocols</div>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className={verdictSelections.karen === "C" ? "bg-primary text-primary-foreground w-full" : "w-full"}
+                            variant={verdictSelections.karen === "C" ? "default" : "outline"}
+                            onClick={() => {
+                              setVerdictSelections({ karen: "C", blake: "B" })
+                              setSelectedVerdict("C")
+                              setTimeout(() => setPostVerdictState("deadlock"), 1200)
+                            }}
+                            disabled={!!verdictSelections.karen}
+                          >
+                            {verdictSelections.karen === "C" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome C"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Reject All → Deadlock */}
+                      {!verdictSelections.karen && (
+                        <div className="flex justify-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-foreground"
+                            onClick={() => setPostVerdictState("deadlock")}
+                          >
+                            Reject All Options
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Waiting for Blake simulation */}
+                      {verdictSelections.karen && postVerdictState === "selecting" && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground animate-pulse">
+                          <RefreshCw className="h-4 w-4" />
+                          Waiting for Blake&apos;s response…
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </>
@@ -1326,11 +1616,79 @@ width={150}
                   <div>
                     <h4 className="font-medium text-red-800">How Escalation Alerts Work</h4>
                     <p className="text-sm text-red-700 mt-1">
-                      If the AI detects keywords associated with harassment, discrimination, or other serious misconduct, 
+                      If the AI detects keywords associated with harassment, discrimination, or other serious misconduct,
                       you&apos;ll receive an immediate alert to intervene as a human mediator outside of OliveBranch.
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* H1: Company Policies */}
+              <div className="bg-card rounded-xl border border-border p-6 space-y-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <h3 className="font-medium text-foreground">Company Policies</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      These policies are used by the AI when generating resolutions to ensure they align with your organisation&apos;s guidelines.
+                    </p>
+                  </div>
+                  {policySaved && (
+                    <span className="text-xs text-primary font-medium flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Saved
+                    </span>
+                  )}
+                </div>
+
+                <Textarea
+                  placeholder="Paste your company policies here — expense approval thresholds, conduct guidelines, escalation procedures…"
+                  className="min-h-[120px] resize-none bg-background"
+                  value={companyPolicy}
+                  onChange={(e) => { setCompanyPolicy(e.target.value); setPolicySaved(false) }}
+                />
+
+                {/* Policy file upload */}
+                <input
+                  ref={policyFileRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) { setPolicyFile(f); setPolicySaved(false) }
+                  }}
+                />
+                {policyFile ? (
+                  <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-sm text-foreground flex-1 truncate">{policyFile.name}</span>
+                    <button
+                      onClick={() => { setPolicyFile(null); if (policyFileRef.current) policyFileRef.current.value = "" }}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => policyFileRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload a policy document (PDF or Word — optional)
+                  </button>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPolicySaved(true)}
+                  disabled={!companyPolicy && !policyFile}
+                >
+                  Save Policies
+                </Button>
               </div>
             </div>
           )}
@@ -1343,6 +1701,17 @@ width={150}
                 Back to Dashboard
               </Button>
 
+              {/* J1: Full Disclosure banner when Bob Protocol is active */}
+              {bobView === "full-disclosure" && (
+                <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-red-800">Full Disclosure Mode — Bob Protocol Active</p>
+                    <p className="text-sm text-red-700 mt-0.5">All identities and responses are now visible to facilitate direct HR mediation.</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
@@ -1353,47 +1722,40 @@ width={150}
                 <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Awaiting Response</Badge>
               </div>
 
-              {/* Anonymized View */}
-              <div className="bg-card rounded-xl border border-border p-6 space-y-6">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="h-4 w-4" />
-                  Anonymized View - Identities Protected
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Party A */}
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-foreground">Party A (Initiator)</h4>
-                    <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4 blur-sm" />
-                      <div className="h-4 bg-muted rounded w-full blur-sm" />
-                      <div className="h-4 bg-muted rounded w-5/6 blur-sm" />
+              {/* I1: Timeline at first fold */}
+              <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+                <h3 className="font-medium text-foreground">Case Timeline</h3>
+                <div className="space-y-4">
+                  {[
+                    { label: "Case Initiated", time: "Today, 9:42 AM", color: "bg-primary", done: true },
+                    { label: "Tone Analysis Complete", time: "Today, 9:43 AM", color: "bg-primary", done: true },
+                    { label: "Party A Consent Given", time: "Today, 9:45 AM", color: "bg-primary", done: true },
+                    { label: "Notification Sent to Party B", time: "Today, 9:45 AM — Awaiting response", color: "bg-yellow-500", done: false },
+                  ].map((event, i) => (
+                    <div key={i} className="flex gap-4 items-start">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-3 h-3 rounded-full ${event.color} shrink-0 mt-0.5`} />
+                        {i < 3 && <div className="w-px flex-1 bg-border mt-1 mb-0 h-6" />}
+                      </div>
+                      <div>
+                        <div className={`text-sm font-medium ${event.done ? "text-foreground" : "text-muted-foreground"}`}>{event.label}</div>
+                        <div className="text-xs text-muted-foreground">{event.time}</div>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">Raw input blurred for privacy</p>
-                  </div>
-
-                  {/* Party B */}
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-foreground">Party B (Responder)</h4>
-                    <div className="bg-secondary/50 rounded-lg p-4 flex items-center justify-center h-24">
-                      <span className="text-sm text-muted-foreground">Awaiting response...</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
+              </div>
 
-                {/* Summary */}
+              {/* AI Summary */}
+              <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+                <h4 className="font-medium text-foreground">AI Summary (De-escalated)</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  A concern has been raised regarding a company credit card purchase. Party A believes the expense
+                  may not align with established guidelines. The case involves questions about resource allocation
+                  and expense approval processes.
+                </p>
                 <div className="border-t border-border pt-4">
-                  <h4 className="font-medium text-foreground mb-2">AI Summary (De-escalated)</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    A concern has been raised regarding a company credit card purchase. Party A believes the expense 
-                    may not align with established guidelines. The case involves questions about resource allocation 
-                    and expense approval processes.
-                  </p>
-                </div>
-
-                {/* Tone Analysis */}
-                <div className="border-t border-border pt-4">
-                  <h4 className="font-medium text-foreground mb-2">Tone Analysis</h4>
+                  <h4 className="font-medium text-foreground mb-2 text-sm">Tone Analysis</h4>
                   <div className="flex items-center gap-2">
                     <div className="w-full bg-secondary rounded-full h-2">
                       <div className="bg-yellow-500 h-2 rounded-full" style={{ width: "35%" }} />
@@ -1406,37 +1768,56 @@ width={150}
                 </div>
               </div>
 
-              {/* Timeline */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-foreground">Case Timeline</h3>
-                <div className="space-y-3">
-                  <div className="flex gap-4">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                    <div>
-                      <div className="font-medium text-foreground text-sm">Case Initiated</div>
-                      <div className="text-xs text-muted-foreground">Today, 9:42 AM</div>
-                    </div>
+              {/* I2: Anonymized view at bottom / J1: Full Disclosure replaces it */}
+              <div className="bg-card rounded-xl border border-border p-6 space-y-6">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  {bobView === "full-disclosure"
+                    ? <span className="text-red-600">Full Disclosure — Bob Protocol Active</span>
+                    : <span className="text-muted-foreground">Anonymized View — Identities Protected</span>
+                  }
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Party A */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-foreground">
+                      {bobView === "full-disclosure" ? "Karen (Initiator)" : "Party A (Initiator)"}
+                    </h4>
+                    {bobView === "full-disclosure" ? (
+                      <div className="bg-secondary/50 rounded-lg p-4 space-y-1">
+                        <p className="text-sm text-foreground leading-relaxed">
+                          I believe the recent company credit card purchase did not follow the pre-approval process. It falls outside the approved expense categories per our guidelines.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
+                          <div className="h-4 bg-muted rounded w-3/4 blur-sm" />
+                          <div className="h-4 bg-muted rounded w-full blur-sm" />
+                          <div className="h-4 bg-muted rounded w-5/6 blur-sm" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Raw input blurred for privacy</p>
+                      </>
+                    )}
                   </div>
-                  <div className="flex gap-4">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                    <div>
-                      <div className="font-medium text-foreground text-sm">Tone Analysis Complete</div>
-                      <div className="text-xs text-muted-foreground">Today, 9:43 AM</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                    <div>
-                      <div className="font-medium text-foreground text-sm">Party A Consent Given</div>
-                      <div className="text-xs text-muted-foreground">Today, 9:45 AM</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500 mt-2" />
-                    <div>
-                      <div className="font-medium text-foreground text-sm">Notification Sent to Party B</div>
-                      <div className="text-xs text-muted-foreground">Today, 9:45 AM - Awaiting response</div>
-                    </div>
+
+                  {/* Party B */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-foreground">
+                      {bobView === "full-disclosure" ? "Blake (Responder)" : "Party B (Responder)"}
+                    </h4>
+                    {bobView === "full-disclosure" ? (
+                      <div className="bg-secondary/50 rounded-lg p-4">
+                        <p className="text-sm text-foreground leading-relaxed">
+                          The purchase was for a legitimate client dinner — a standard business expense covered under Section 4.5 client-facing approvals. I was not aware this needed pre-approval.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-secondary/50 rounded-lg p-4 flex items-center justify-center h-24">
+                        <span className="text-sm text-muted-foreground">Awaiting response...</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
