@@ -73,6 +73,26 @@ const keywordQuestions: Record<string, { question: string; placeholder: string }
     { question: "What factors contributed to the situation?", placeholder: "Dependencies, workload, communication..." },
     { question: "How has this affected the project or team?", placeholder: "Describe the consequences..." },
   ],
+  "Performance Feedback": [
+    { question: "What feedback or review is at the center of this issue?", placeholder: "Describe the review, rating, or comment in question..." },
+    { question: "Why do you feel this feedback was unfair or inaccurate?", placeholder: "Describe what was overlooked or misrepresented..." },
+    { question: "What outcome are you hoping for?", placeholder: "Revised review, documented context, a conversation..." },
+  ],
+  "Workplace Behavior": [
+    { question: "What behavior occurred and when?", placeholder: "Describe the incident as specifically as possible..." },
+    { question: "How did this behavior affect you or your ability to work?", placeholder: "Describe the impact on your wellbeing or productivity..." },
+    { question: "Has this happened before or is this part of a pattern?", placeholder: "Note any prior incidents or witnesses..." },
+  ],
+  "Credit & Recognition": [
+    { question: "What work or contribution was not recognized?", placeholder: "Describe what you did and when..." },
+    { question: "How was the credit attributed instead?", placeholder: "Who received recognition, and in what context..." },
+    { question: "What would appropriate recognition look like?", placeholder: "An acknowledgment, updated record, promotion consideration..." },
+  ],
+  "Work Distribution": [
+    { question: "How is the workload currently distributed on your team?", placeholder: "Describe who is doing what and how tasks are assigned..." },
+    { question: "What makes the current distribution feel unequal or unfair?", placeholder: "Volume, complexity, visibility of tasks..." },
+    { question: "What changes would create a more balanced arrangement?", placeholder: "Describe your ideal distribution or process..." },
+  ],
 }
 
 const availableKeywords = Object.keys(keywordQuestions)
