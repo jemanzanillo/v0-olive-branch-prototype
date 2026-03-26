@@ -28,7 +28,7 @@ export function Header() {
             Features
           </Link>
           <Link href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            How It is supposed to Work
+            How It is going to Work
           </Link>
           <Link href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Pricing
