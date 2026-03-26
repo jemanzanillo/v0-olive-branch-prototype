@@ -168,6 +168,7 @@ export default function DemoPage() {
   const [colleagueEmail, setColleagueEmail] = useState("")
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
   const [karenResponses, setKarenResponses] = useState<Record<string, string>>({})
+  const [currentQuestionPage, setCurrentQuestionPage] = useState(0)
   const [toneAnalysis, setToneAnalysis] = useState<ToneAnalysis | null>(null)
   const [consentGiven, setConsentGiven] = useState(false)
   
@@ -185,22 +186,28 @@ export default function DemoPage() {
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [selectedVerdict, setSelectedVerdict] = useState<string | null>(null)
 
-  // Get dynamic questions based on selected keywords
-  const getDynamicQuestions = () => {
-    const questions: { question: string; placeholder: string }[] = [
-      { question: "What happened?", placeholder: "Describe the situation objectively. Focus on facts and specific events..." },
-      { question: "What outcome do you want?", placeholder: "What would a good resolution look like for you?" },
-      { question: "What do you think the other person misunderstood?", placeholder: "What might they have gotten wrong about your intentions or actions?" },
+  // Get question pages grouped by topic
+  const getQuestionPages = () => {
+    const pages: { title: string; questions: { question: string; placeholder: string }[] }[] = [
+      {
+        title: "Your Situation",
+        questions: [
+          { question: "What happened?", placeholder: "Describe the situation objectively. Focus on facts and specific events..." },
+          { question: "What outcome do you want?", placeholder: "What would a good resolution look like for you?" },
+          { question: "What do you think the other person misunderstood?", placeholder: "What might they have gotten wrong about your intentions or actions?" },
+        ],
+      },
     ]
-    
     selectedKeywords.forEach(keyword => {
       if (keywordQuestions[keyword]) {
-        questions.push(...keywordQuestions[keyword])
+        pages.push({ title: keyword, questions: keywordQuestions[keyword] })
       }
     })
-    
-    return questions
+    return pages
   }
+
+  // Keep getDynamicQuestions for tone analysis (needs all questions flat)
+  const getDynamicQuestions = () => getQuestionPages().flatMap(p => p.questions)
 
   // Handle Karen's tone review submission
   const handleToneReview = () => {
@@ -452,7 +459,7 @@ width={150}
                 <Button 
                   size="lg" 
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={() => setKarenStep("questions")}
+                  onClick={() => { setCurrentQuestionPage(0); setKarenStep("questions") }}
                   disabled={!colleagueName || !colleagueEmail || selectedKeywords.length === 0}
                 >
                   Continue
@@ -462,49 +469,97 @@ width={150}
             </div>
           )}
 
-          {/* Step 2: Dynamic Questions */}
-          {karenStep === "questions" && (
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
-                  Share Your Perspective
-                </h2>
-                <p className="text-muted-foreground">
-                  Answer these questions to help us understand your side of the situation with {colleagueName}.
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                {getDynamicQuestions().map((q, index) => (
-                  <div key={index} className="space-y-2">
-                    <label className="block font-medium text-foreground">{q.question}</label>
-                    <Textarea
-                      placeholder={q.placeholder}
-                      className="min-h-[100px] resize-none bg-card"
-                      value={karenResponses[q.question] || ""}
-                      onChange={(e) => setKarenResponses({ ...karenResponses, [q.question]: e.target.value })}
-                    />
+          {/* Step 2: Dynamic Questions (paginated by topic) */}
+          {karenStep === "questions" && (() => {
+            const pages = getQuestionPages()
+            const page = pages[currentQuestionPage]
+            const isFirst = currentQuestionPage === 0
+            const isLast = currentQuestionPage === pages.length - 1
+            const pageAnswered = page.questions.some(q => karenResponses[q.question]?.trim())
+            return (
+              <div className="space-y-8">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
+                      Share Your Perspective
+                    </h2>
+                    <span className="text-sm text-muted-foreground">
+                      {currentQuestionPage + 1} of {pages.length}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <p className="text-muted-foreground">
+                    Answer these questions to help us understand your side of the situation with {colleagueName}.
+                  </p>
+                </div>
 
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setKarenStep("setup")}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
-                <Button 
-                  size="lg" 
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={handleToneReview}
-                  disabled={Object.values(karenResponses).filter(Boolean).length < 3}
-                >
-                  Review My Tone
-                  <Sparkles className="ml-2 h-5 w-5" />
-                </Button>
+                {/* Page indicator dots */}
+                <div className="flex gap-2">
+                  {pages.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        i === currentQuestionPage
+                          ? "w-6 bg-primary"
+                          : i < currentQuestionPage
+                          ? "w-2 bg-primary/40"
+                          : "w-2 bg-secondary"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    {page.title}
+                  </p>
+                  <div className="space-y-6">
+                    {page.questions.map((q, index) => (
+                      <div key={index} className="space-y-2">
+                        <label className="block font-medium text-foreground">{q.question}</label>
+                        <Textarea
+                          placeholder={q.placeholder}
+                          className="min-h-[100px] resize-none bg-card"
+                          value={karenResponses[q.question] || ""}
+                          onChange={(e) => setKarenResponses({ ...karenResponses, [q.question]: e.target.value })}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    onClick={() => isFirst ? setKarenStep("setup") : setCurrentQuestionPage(p => p - 1)}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  {isLast ? (
+                    <Button
+                      size="lg"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      onClick={handleToneReview}
+                      disabled={!pageAnswered}
+                    >
+                      Review My Tone
+                      <Sparkles className="ml-2 h-5 w-5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      size="lg"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      onClick={() => setCurrentQuestionPage(p => p + 1)}
+                      disabled={!pageAnswered}
+                    >
+                      Next
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Step 3: Tone Review */}
           {karenStep === "tone-review" && toneAnalysis && (
@@ -586,7 +641,7 @@ width={150}
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setKarenStep("questions")}>
+                <Button variant="outline" onClick={() => { setCurrentQuestionPage(getQuestionPages().length - 1); setKarenStep("questions") }}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Edit Responses
                 </Button>
