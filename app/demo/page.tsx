@@ -263,13 +263,8 @@ export default function DemoPage() {
     setToneVersion(next)
     setToneAnalysis({
       ...toneAnalysis,
-      originalText: nextRefined,
       refinedText: nextRefined,
-      flaggedPhrases: [],
-      overallTone: "professional",
     })
-    // Replace the primary narrative input so regenerated tone becomes the default text.
-    setKarenResponses(prev => ({ ...prev, ["What happened?"]: nextRefined }))
   }
 
   // Handle evidence file selection (10 MB limit)
