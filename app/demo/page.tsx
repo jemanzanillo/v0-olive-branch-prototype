@@ -47,14 +47,19 @@ interface ToneAnalysis {
 
 // Keyword-based dynamic questions
 const keywordQuestions: Record<string, { question: string; placeholder: string }[]> = {
-  "Company Expenses": [
-    { question: "What specific expense or purchase is at the center of this issue?", placeholder: "Describe the expense, amount, and context..." },
-    { question: "What company policy do you believe was violated or misunderstood?", placeholder: "Reference any specific guidelines or procedures..." },
-    { question: "How has this affected your work or the team's budget?", placeholder: "Describe the impact..." },
+  "Promotion Eligibility": [
+    { question: "What promotion or title decision is at the center of this issue?", placeholder: "Describe the role decision, timeline, and who was selected..." },
+    { question: "What criteria do you believe were applied, and where do you see gaps?", placeholder: "Reference metrics, expectations, or stated promotion requirements..." },
+    { question: "How has this decision affected your motivation, trust, or career path?", placeholder: "Describe the professional impact..." },
+  ],
+  "Salary Alignment": [
+    { question: "What salary concern is connected to this dispute?", placeholder: "Describe the pay difference, raise decision, or compensation concern..." },
+    { question: "How does your workload compare to your current compensation?", placeholder: "Share concrete examples of scope, output, and responsibilities..." },
+    { question: "What compensation outcome would feel fair and sustainable?", placeholder: "Describe the adjustment, timing, or review process you are seeking..." },
   ],
   "Resource Allocation": [
-    { question: "What resources are being disputed?", placeholder: "Equipment, budget, time, personnel..." },
-    { question: "How were resources originally allocated or promised?", placeholder: "Describe the initial agreement or understanding..." },
+    { question: "What opportunities or responsibilities are being unevenly allocated?", placeholder: "Courses, committees, mentoring, visibility, funding, etc..." },
+    { question: "How were those responsibilities originally assigned or promised?", placeholder: "Describe the initial understanding or process..." },
     { question: "What would fair allocation look like to you?", placeholder: "Describe your ideal outcome..." },
   ],
   "Communication Issues": [
@@ -105,16 +110,22 @@ const availableKeywords = Object.keys(keywordQuestions).sort()
 const generateBlakeFollowups = (karenResponses: Record<string, string>, keywords: string[]): { question: string; placeholder: string }[] => {
   const followups: { question: string; placeholder: string }[] = []
   
-  if (keywords.includes("Company Expenses")) {
+  if (keywords.includes("Promotion Eligibility")) {
     followups.push({ 
-      question: "Can you provide documentation for the expense (receipts, approvals, project requirements)?", 
-      placeholder: "Describe any supporting documentation you have..." 
+      question: "Can you summarize the milestones, outcomes, or institutional contributions that support the current promotion decision?", 
+      placeholder: "Share key achievements, tenure context, and criteria used..." 
     })
   }
-  if (keywords.includes("Resource Allocation")) {
+  if (keywords.includes("Salary Alignment")) {
     followups.push({ 
-      question: "Were there competing priorities that affected how resources were distributed?", 
-      placeholder: "Explain any constraints or decisions you faced..." 
+      question: "How do you view the relationship between current compensation and responsibilities across the team?", 
+      placeholder: "Explain any compensation constraints, benchmarks, or role differences..." 
+    })
+  }
+  if (keywords.includes("Work Distribution")) {
+    followups.push({
+      question: "Were there constraints that affected how teaching, admin, or leadership tasks were distributed?",
+      placeholder: "Explain any operational realities that shaped workload distribution..."
     })
   }
   
@@ -336,7 +347,7 @@ width={150}
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {/* Karen - Initiator */}
+            {/* Jaythan - Initiator */}
             <button
               onClick={() => setSelectedPersona("karen")}
               className="group text-left bg-card rounded-xl border-2 border-border hover:border-primary p-6 transition-all hover:shadow-lg"
@@ -344,18 +355,18 @@ width={150}
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                 <User className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="font-serif text-xl font-semibold text-foreground mb-2">Karen</h3>
+              <h3 className="font-serif text-xl font-semibold text-foreground mb-2">Jaythan</h3>
               <p className="text-sm text-muted-foreground mb-4">The Initiator</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Start a case, describe your perspective, and experience the de-escalation filter with tone detection.
               </p>
               <div className="mt-4 flex items-center text-primary text-sm font-medium">
-                Start as Karen
+                Start as Jaythan
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
 
-            {/* Blake - Responder */}
+            {/* Joe - Responder */}
             <button
               onClick={() => setSelectedPersona("blake")}
               className="group text-left bg-card rounded-xl border-2 border-border hover:border-primary p-6 transition-all hover:shadow-lg"
@@ -363,18 +374,18 @@ width={150}
               <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
                 <MessageSquare className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="font-serif text-xl font-semibold text-foreground mb-2">Blake</h3>
+              <h3 className="font-serif text-xl font-semibold text-foreground mb-2">Joe</h3>
               <p className="text-sm text-muted-foreground mb-4">The Responder</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Receive a case notification, provide your perspective, and answer AI follow-up questions.
               </p>
               <div className="mt-4 flex items-center text-accent text-sm font-medium">
-                Start as Blake
+                Start as Joe
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
 
-            {/* Bob - HR Oversight */}
+            {/* Mindy - Program Oversight */}
             <button
               onClick={() => setSelectedPersona("bob")}
               className="group text-left bg-card rounded-xl border-2 border-border hover:border-primary p-6 transition-all hover:shadow-lg"
@@ -382,13 +393,13 @@ width={150}
               <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center mb-4 group-hover:bg-secondary/80 transition-colors">
                 <Eye className="h-7 w-7 text-foreground" />
               </div>
-              <h3 className="font-serif text-xl font-semibold text-foreground mb-2">Bob</h3>
-              <p className="text-sm text-muted-foreground mb-4">HR Manager (Shadow Oversight)</p>
+              <h3 className="font-serif text-xl font-semibold text-foreground mb-2">Mindy</h3>
+              <p className="text-sm text-muted-foreground mb-4">Program Leader (Shadow Oversight)</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Monitor anonymized cases in real-time and receive alerts for serious misconduct.
               </p>
               <div className="mt-4 flex items-center text-foreground text-sm font-medium">
-                Start as Bob
+                Start as Mindy
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
@@ -416,7 +427,7 @@ width={150}
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="gap-1">
                 <User className="h-3 w-3" />
-                Karen (Initiator)
+                Jaythan (Initiator)
               </Badge>
               <Button variant="ghost" size="sm" onClick={() => setSelectedPersona(null)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -472,7 +483,7 @@ width={150}
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-foreground">Colleague&apos;s Name</label>
                     <Input
-                      placeholder="e.g. Blake Johnson"
+                      placeholder="e.g. Joe Ramirez"
                       value={colleagueName}
                       onChange={(e) => setColleagueName(e.target.value)}
                     />
@@ -482,7 +493,7 @@ width={150}
                     <label className="block text-sm font-semibold text-foreground">Colleague&apos;s Email</label>
                     <Input
                       type="email"
-                      placeholder="e.g. blake@company.com"
+                      placeholder="e.g. joe@company.com"
                       value={colleagueEmail}
                       onChange={(e) => {
                         setColleagueEmail(e.target.value)
@@ -958,7 +969,7 @@ width={150}
 
   // Blake's Journey
   if (selectedPersona === "blake") {
-    const blakeFollowups = generateBlakeFollowups(karenResponses, selectedKeywords.length > 0 ? selectedKeywords : ["Company Expenses"])
+    const blakeFollowups = generateBlakeFollowups(karenResponses, selectedKeywords.length > 0 ? selectedKeywords : ["Promotion Eligibility"])
     
     return (
       <div className="min-h-screen bg-background">
@@ -976,7 +987,7 @@ width={150}
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="gap-1 border-accent text-accent">
                 <Leaf className="h-3 w-3" />
-                Blake (Responder)
+                Joe (Responder)
               </Badge>
               <Button variant="ghost" size="sm" onClick={() => setSelectedPersona(null)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -992,7 +1003,7 @@ width={150}
             <div className="space-y-6">
               {/* Demo context note */}
               <div className="bg-secondary/50 border border-border rounded-lg px-4 py-2 text-xs text-muted-foreground text-center">
-                📧 <span className="font-medium">Demo context:</span> This is what Blake sees in their email inbox.
+                📧 <span className="font-medium">Demo context:</span> This is what Joe sees in their email inbox.
               </div>
 
               {/* Email chrome wrapper */}
@@ -1005,7 +1016,7 @@ width={150}
                   </div>
                   <div className="flex gap-2">
                     <span className="text-muted-foreground w-16 shrink-0">To:</span>
-                    <span className="text-foreground">blake@company.com</span>
+                    <span className="text-foreground">joe@company.com</span>
                   </div>
                   <div className="flex gap-2">
                     <span className="text-muted-foreground w-16 shrink-0">Subject:</span>
@@ -1045,12 +1056,12 @@ width={150}
                   <div className="bg-secondary/50 rounded-xl border border-border p-5 space-y-3">
                     <h3 className="font-medium text-foreground">Summary of Concern</h3>
                     <p className="text-muted-foreground leading-relaxed text-sm">
-                      There appears to be a misunderstanding regarding a recent company credit card purchase.
-                      The other party would like to discuss the situation and find a mutually agreeable resolution.
+                      There is an open concern regarding promotion readiness and salary alignment in the department.
+                      The other party would like to discuss the current role structure and find a fair path forward.
                     </p>
                     <div className="flex flex-wrap gap-2 pt-1">
-                      <Badge variant="secondary">Company Expenses</Badge>
-                      <Badge variant="secondary">Resource Allocation</Badge>
+                      <Badge variant="secondary">Promotion Eligibility</Badge>
+                      <Badge variant="secondary">Salary Alignment</Badge>
                     </div>
                   </div>
 
@@ -1093,12 +1104,12 @@ width={150}
                 </summary>
                 <div className="px-5 pb-5 space-y-3 border-t border-border pt-4">
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    There appears to be a misunderstanding regarding a recent company credit card purchase.
-                    The other party would like to discuss the situation and find a mutually agreeable resolution.
+                    There is an open concern regarding promotion readiness and salary alignment in the department.
+                    The other party would like to discuss the current role structure and find a fair path forward.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">Company Expenses</Badge>
-                    <Badge variant="secondary">Resource Allocation</Badge>
+                    <Badge variant="secondary">Promotion Eligibility</Badge>
+                    <Badge variant="secondary">Salary Alignment</Badge>
                   </div>
                 </div>
               </details>
@@ -1124,7 +1135,7 @@ width={150}
                     <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">Optional</span>
                   </div>
                   <Textarea
-                    placeholder="Describe any supporting evidence: receipts, emails, project requirements, approvals..."
+                    placeholder="Describe any supporting evidence: reviews, milestones, workload records, department criteria..."
                     className="min-h-[80px] resize-none bg-card"
                     value={blakeResponses["evidence"] || ""}
                     onChange={(e) => setBlakeResponses({ ...blakeResponses, evidence: e.target.value })}
@@ -1255,7 +1266,7 @@ width={150}
                   Response Submitted
                 </h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  Thanks, Blake. The AI has reviewed your response and has a few follow-up questions for Karen to complete the picture.
+                  Thanks, Joe. The AI has reviewed your response and has a few follow-up questions for Jaythan to complete the picture.
                 </p>
               </div>
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 max-w-md mx-auto space-y-3">
@@ -1264,7 +1275,7 @@ width={150}
                   <span className="text-sm font-medium">Final Clarification Needed</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Switch to Karen&apos;s perspective so she can answer a couple of final questions before resolutions are generated.
+                  Switch to Jaythan&apos;s perspective so he can answer a couple of final questions before resolutions are generated.
                 </p>
               </div>
               <Button
@@ -1272,7 +1283,7 @@ width={150}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={() => setSelectedPersona("karen")}
               >
-                Switch to Karen&apos;s Perspective
+                Switch to Jaythan&apos;s Perspective
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
@@ -1290,23 +1301,23 @@ width={150}
                       <span className="text-sm font-medium">Additional Clarification Needed</span>
                     </div>
                     <p className="text-muted-foreground">
-                      Based on Blake&apos;s response, the AI is now asking Karen a final set of clarifying questions to ensure a complete picture.
+                      Based on Joe&apos;s response, the AI is now asking Jaythan a final set of clarifying questions to ensure a complete picture.
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
-                      Final Clarification (Karen&apos;s View)
+                      Final Clarification (Jaythan&apos;s View)
                     </h2>
                     <p className="text-muted-foreground">
-                      In the full product, Karen would receive these questions. For the demo, you can see the process.
+                      In the full product, Jaythan would receive these questions. For the demo, you can see the process.
                     </p>
                   </div>
 
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <label className="block font-medium text-foreground">
-                        Blake mentioned project requirements - were you aware of these before raising the concern?
+                        Joe mentioned tenure and program leadership milestones - were you aware of these before raising the concern?
                       </label>
                       <Textarea
                         placeholder="Your response..."
@@ -1402,23 +1413,23 @@ width={150}
                           <div className="bg-card rounded-lg p-4">
                             <h5 className="font-medium text-foreground text-sm mb-2">Reasoning Breakdown</h5>
                             <p className="text-xs text-muted-foreground">
-                              {selectedVerdict === "A" && "Company policy Section 4.2 specifies pre-approval for purchases over $100."}
-                              {selectedVerdict === "B" && "Both parties operated under reasonable but different interpretations of guidelines."}
-                              {selectedVerdict === "C" && "Client-facing expenses have broader approval under Section 4.5."}
+                              {selectedVerdict === "A" && "Current workload data indicates Jaythan is performing duties typically assigned to the Associate track."}
+                              {selectedVerdict === "B" && "Joe brings tenure and institutional continuity, while Jaythan has strong current output momentum."}
+                              {selectedVerdict === "C" && "Joe's role includes critical administrative and historical responsibilities that are less visible day-to-day."}
                             </p>
                           </div>
                           <div className="bg-card rounded-lg p-4">
                             <h5 className="font-medium text-foreground text-sm mb-2">Suggested Actions</h5>
                             <p className="text-xs text-muted-foreground">
-                              {selectedVerdict === "A" && "Blake submits retroactive approval; both review expense policy together."}
-                              {selectedVerdict === "B" && "Schedule 30-min sync to draft new pre-approval workflow for the team."}
-                              {selectedVerdict === "C" && "Karen requests a walkthrough of current client protocols from Blake."}
+                              {selectedVerdict === "A" && "Mindy initiates a compensation review and outlines a bridge path toward the next Associate opening."}
+                              {selectedVerdict === "B" && "Create a shared department initiative where Joe mentors Jaythan on promotion criteria for the next cycle."}
+                              {selectedVerdict === "C" && "Joe retains the role while Mindy provides Jaythan a transparent promotion roadmap with measurable milestones."}
                             </p>
                           </div>
                           <div className="bg-card rounded-lg p-4">
                             <h5 className="font-medium text-foreground text-sm mb-2">Communication Script</h5>
                             <p className="text-xs text-muted-foreground italic">
-                              &quot;I&apos;ve had a chance to reflect on our recent discussion. I think we both want what&apos;s best for the team. Would you have 15 minutes this week to talk through a path forward?&quot;
+                              &quot;Joe, I value our work in Mindy&apos;s department. I&apos;ve been feeling frustrated about my growth path, and I&apos;d like to talk through the Middle Ground suggestion so we can both succeed.&quot;
                             </p>
                           </div>
                         </div>
@@ -1455,30 +1466,30 @@ width={150}
                         >
                           <AlertTriangle className="h-6 w-6 text-red-500" />
                           <h4 className="font-medium text-foreground">Escalate to HR</h4>
-                          <p className="text-sm text-muted-foreground">Initiate the Bob Protocol — HR receives full disclosure to mediate directly.</p>
+                          <p className="text-sm text-muted-foreground">Initiate the Mindy Protocol — program leadership receives full disclosure to mediate directly.</p>
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* ── Escalated / Bob Protocol ── */}
+                  {/* ── Escalated / Mindy Protocol ── */}
                   {postVerdictState === "escalated" && (
                     <div className="space-y-6">
                       <div className="bg-red-50 border border-red-200 rounded-xl p-6 space-y-3">
                         <div className="flex items-center gap-2 text-red-700">
                           <AlertTriangle className="h-5 w-5" />
-                          <span className="font-semibold">Bob Protocol Initiated</span>
+                          <span className="font-semibold">Mindy Protocol Initiated</span>
                         </div>
                         <p className="text-sm text-red-700">
-                          The case has been escalated to HR. Bob now has <strong>Full Disclosure</strong> access — all identities and responses are visible to facilitate direct mediation.
+                          The case has been escalated to program leadership. Mindy now has <strong>Full Disclosure</strong> access — all identities and responses are visible to facilitate direct mediation.
                         </p>
                       </div>
                       <div className="bg-secondary/50 rounded-lg border border-border p-4 text-sm text-muted-foreground">
-                        Switch to <strong>Bob (HR Manager)</strong> in the demo to see the Full Disclosure view.
+                        Switch to <strong>Mindy (Program Leader)</strong> in the demo to see the Full Disclosure view.
                       </div>
                       <div className="flex justify-center">
                         <Button variant="outline" onClick={() => setSelectedPersona(null)}>
-                          Switch to Bob&apos;s View
+                          Switch to Mindy&apos;s View
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                       </div>
@@ -1496,7 +1507,7 @@ width={150}
                       )}
 
                       <p className="text-sm text-muted-foreground text-center">
-                        <span className="font-medium text-foreground">Demo:</span> You are in Karen&apos;s view. Accept an outcome — Blake&apos;s response will be simulated.
+                        <span className="font-medium text-foreground">Demo:</span> You are in Jaythan&apos;s view. Accept an outcome — Joe&apos;s response will be simulated.
                       </p>
 
                       {/* G1: 3-column grid */}
@@ -1510,11 +1521,11 @@ width={150}
                               <span className="font-serif font-bold text-primary text-sm">A</span>
                             </div>
                             <div className="flex-1">
-                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">Logic Favors Karen</h3>
+                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">Logic Favors Jaythan</h3>
                               <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                                Based on company guidelines, Karen&apos;s argument regarding the credit card policy is stronger. The purchase appears to fall outside approved categories.
+                                Workload and impact records suggest Jaythan is already operating at an Associate level while still on an adjunct contract.
                               </p>
-                              <div className="text-xs text-primary font-medium">Suggested: Blake to follow pre-approval process</div>
+                              <div className="text-xs text-primary font-medium">Suggested: salary adjustment and bridge role toward Associate</div>
                             </div>
                           </div>
                           <Button
@@ -1546,9 +1557,9 @@ width={150}
                             <div className="flex-1">
                               <h3 className="font-serif text-base font-semibold text-foreground mb-1">The Middle Ground</h3>
                               <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                                Both parties share accountability: Karen&apos;s communication could have been clearer, and Blake&apos;s purchase had legitimate intent.
+                                Both professors are key to the degree program: Joe contributes tenure-based stability while Jaythan drives current output momentum.
                               </p>
-                              <div className="text-xs text-primary font-medium">Suggested: New pre-approval process for the team</div>
+                              <div className="text-xs text-primary font-medium">Suggested: shared initiative + mentorship toward next promotion cycle</div>
                             </div>
                           </div>
                           <Button
@@ -1575,11 +1586,11 @@ width={150}
                               <span className="font-serif font-bold text-primary text-sm">C</span>
                             </div>
                             <div className="flex-1">
-                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">Logic Favors Blake</h3>
+                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">Logic Favors Joe</h3>
                               <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                                The purchase was for a legitimate client event under approved business purposes. Karen may not have had full context about team needs.
+                                Joe&apos;s tenure-linked responsibilities and institutional tasks justify the current role decision under existing program criteria.
                               </p>
-                              <div className="text-xs text-primary font-medium">Suggested: Karen to review client protocols</div>
+                              <div className="text-xs text-primary font-medium">Suggested: transparent promotion metrics for Jaythan</div>
                             </div>
                           </div>
                           <Button
@@ -1616,7 +1627,7 @@ width={150}
                       {verdictSelections.karen && postVerdictState === "selecting" && (
                         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground animate-pulse">
                           <RefreshCw className="h-4 w-4" />
-                          Waiting for Blake&apos;s response…
+                          Waiting for Joe&apos;s response…
                         </div>
                       )}
                     </>
@@ -1648,7 +1659,7 @@ width={150}
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="gap-1">
                 <Eye className="h-3 w-3" />
-                Bob (HR Manager)
+                Mindy (Program Leader)
               </Badge>
               <Button variant="ghost" size="sm" onClick={() => setSelectedPersona(null)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -1664,7 +1675,7 @@ width={150}
             <div className="space-y-8">
               <div className="space-y-2">
                 <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
-                  HR Oversight Dashboard
+                  Program Oversight Dashboard
                 </h2>
                 <p className="text-muted-foreground">
                   Monitor active cases with anonymized data. You&apos;ll be alerted if serious misconduct is detected.
@@ -1716,8 +1727,8 @@ width={150}
                       </div>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge variant="secondary">Company Expenses</Badge>
-                      <Badge variant="secondary">Resource Allocation</Badge>
+                      <Badge variant="secondary">Promotion Eligibility</Badge>
+                      <Badge variant="secondary">Salary Alignment</Badge>
                     </div>
                   </button>
 
@@ -1795,7 +1806,7 @@ width={150}
                 </div>
 
                 <Textarea
-                  placeholder="Paste your company policies here — expense approval thresholds, conduct guidelines, escalation procedures…"
+                  placeholder="Paste your company policies here — promotion criteria, compensation guidelines, and escalation procedures…"
                   className="min-h-[120px] resize-none bg-background"
                   value={companyPolicy}
                   onChange={(e) => { setCompanyPolicy(e.target.value); setPolicySaved(false) }}
@@ -1853,12 +1864,12 @@ width={150}
                 Back to Dashboard
               </Button>
 
-              {/* J1: Full Disclosure banner when Bob Protocol is active */}
+              {/* J1: Full Disclosure banner when Mindy Protocol is active */}
               {bobView === "full-disclosure" && (
                 <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-red-800">Full Disclosure Mode — Bob Protocol Active</p>
+                    <p className="font-semibold text-red-800">Full Disclosure Mode — Mindy Protocol Active</p>
                     <p className="text-sm text-red-700 mt-0.5">All identities and responses are now visible to facilitate direct HR mediation.</p>
                   </div>
                 </div>
@@ -1902,9 +1913,9 @@ width={150}
               <div className="bg-card rounded-xl border border-border p-6 space-y-4">
                 <h4 className="font-medium text-foreground">AI Summary (De-escalated)</h4>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  A concern has been raised regarding a company credit card purchase. Party A believes the expense
-                  may not align with established guidelines. The case involves questions about resource allocation
-                  and expense approval processes.
+                  A concern has been raised regarding promotion eligibility and salary alignment. Party A believes
+                  current workload and contribution levels are not reflected in title or compensation. The case
+                  involves questions about role criteria, work distribution, and growth pathways.
                 </p>
                 <div className="border-t border-border pt-4">
                   <h4 className="font-medium text-foreground mb-2 text-sm">Tone Analysis</h4>
@@ -1925,7 +1936,7 @@ width={150}
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Shield className="h-4 w-4 text-muted-foreground" />
                   {bobView === "full-disclosure"
-                    ? <span className="text-red-600">Full Disclosure — Bob Protocol Active</span>
+                    ? <span className="text-red-600">Full Disclosure — Mindy Protocol Active</span>
                     : <span className="text-muted-foreground">Anonymized View — Identities Protected</span>
                   }
                 </div>
@@ -1934,12 +1945,12 @@ width={150}
                   {/* Party A */}
                   <div className="space-y-3">
                     <h4 className="font-medium text-foreground">
-                      {bobView === "full-disclosure" ? "Karen (Initiator)" : "Party A (Initiator)"}
+                      {bobView === "full-disclosure" ? "Jaythan (Initiator)" : "Party A (Initiator)"}
                     </h4>
                     {bobView === "full-disclosure" ? (
                       <div className="bg-secondary/50 rounded-lg p-4 space-y-1">
                         <p className="text-sm text-foreground leading-relaxed">
-                          I believe the recent company credit card purchase did not follow the pre-approval process. It falls outside the approved expense categories per our guidelines.
+                          I believe my current workload and outcomes align with Associate expectations, but my title and salary do not reflect that level of contribution.
                         </p>
                       </div>
                     ) : (
@@ -1957,12 +1968,12 @@ width={150}
                   {/* Party B */}
                   <div className="space-y-3">
                     <h4 className="font-medium text-foreground">
-                      {bobView === "full-disclosure" ? "Blake (Responder)" : "Party B (Responder)"}
+                      {bobView === "full-disclosure" ? "Joe (Responder)" : "Party B (Responder)"}
                     </h4>
                     {bobView === "full-disclosure" ? (
                       <div className="bg-secondary/50 rounded-lg p-4">
                         <p className="text-sm text-foreground leading-relaxed">
-                          The purchase was for a legitimate client dinner — a standard business expense covered under Section 4.5 client-facing approvals. I was not aware this needed pre-approval.
+                          I understand the frustration, but my role reflects years of tenure and department leadership responsibilities that are not always visible in day-to-day teaching output.
                         </p>
                       </div>
                     ) : (
