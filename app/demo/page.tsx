@@ -170,6 +170,11 @@ const analyzeTone = (text: string): ToneAnalysis => {
     flaggedPhrases.length === 0 ? "professional" : 
     flaggedPhrases.length <= 2 ? "emotional" : "aggressive"
   
+  // If no issues were flagged, still provide a constructively framed version
+  if (flaggedPhrases.length === 0 && text.trim()) {
+    refinedText = `I would like to discuss this matter constructively. ${text} I believe a professional conversation can help us reach a fair understanding.`
+  }
+  
   return { originalText: text, refinedText, flaggedPhrases, overallTone }
 }
 
