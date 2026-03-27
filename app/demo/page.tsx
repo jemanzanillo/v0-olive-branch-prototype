@@ -201,7 +201,10 @@ export default function DemoPage() {
   const [policyFile, setPolicyFile] = useState<File | null>(null)
   const [policySaved, setPolicySaved] = useState(false)
   const [bobView, setBobView] = useState<"anonymized" | "full-disclosure">("anonymized")
+  const [karenEvidenceFile, setKarenEvidenceFile] = useState<File | null>(null)
+  const [karenEvidenceFileError, setKarenEvidenceFileError] = useState("")
   const evidenceFileRef = useRef<HTMLInputElement>(null)
+  const karenEvidenceFileRef = useRef<HTMLInputElement>(null)
   const policyFileRef = useRef<HTMLInputElement>(null)
 
   // Get question pages grouped by topic
@@ -262,6 +265,17 @@ export default function DemoPage() {
     }
     setEvidenceFileError("")
     setEvidenceFile(file)
+  }
+
+  const handleKarenEvidenceFile = (file: File | null) => {
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setKarenEvidenceFileError("File exceeds 10 MB limit. Please choose a smaller file.")
+      setKarenEvidenceFile(null)
+      return
+    }
+    setKarenEvidenceFileError("")
+    setKarenEvidenceFile(file)
   }
 
   // Handle consent and submission
@@ -597,6 +611,44 @@ width={150}
                       </div>
                       )
                     })}
+
+                    {/* Evidence upload on page 0 only */}
+                    {currentQuestionPage === 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <label className="block font-medium text-foreground">Supporting Evidence</label>
+                          <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">Optional</span>
+                        </div>
+                        <input
+                          ref={karenEvidenceFileRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                          className="hidden"
+                          onChange={(e) => handleKarenEvidenceFile(e.target.files?.[0] ?? null)}
+                        />
+                        {karenEvidenceFile ? (
+                          <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+                            <FileText className="h-4 w-4 text-primary shrink-0" />
+                            <span className="text-sm text-foreground flex-1 truncate">{karenEvidenceFile.name}</span>
+                            <button
+                              onClick={() => { setKarenEvidenceFile(null); if (karenEvidenceFileRef.current) karenEvidenceFileRef.current.value = "" }}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => karenEvidenceFileRef.current?.click()}
+                            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all"
+                          >
+                            <Upload className="h-4 w-4" />
+                            Attach supporting evidence (PDF, Word, image — max 10 MB)
+                          </button>
+                        )}
+                        {karenEvidenceFileError && <p className="text-xs text-red-500">{karenEvidenceFileError}</p>}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -807,29 +859,97 @@ width={150}
             </div>
           )}
 
-          {/* Waiting State */}
+          {/* Waiting State — two modes depending on whether Blake has responded */}
           {karenStep === "waiting" && (
-            <div className="space-y-8 text-center py-12">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="h-10 w-10 text-primary" />
-              </div>
-              <div className="space-y-4">
-                <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
-                  Case Submitted Successfully
-                </h2>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  {colleagueName} has been notified. You&apos;ll receive an update once they provide their perspective.
-                </p>
-              </div>
-              <div className="bg-secondary/50 rounded-lg border border-border p-4 max-w-md mx-auto">
-                <p className="text-sm text-muted-foreground">
-                  In the demo, switch to Blake&apos;s perspective to continue the journey.
-                </p>
-              </div>
-              <Button variant="outline" onClick={() => setSelectedPersona(null)}>
-                Switch Perspective
-              </Button>
-            </div>
+            <>
+              {/* Final clarification: shown after Blake responds and switches back to Karen */}
+              {analysisStep === "clarification-karen" && (
+                <div className="space-y-8">
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 space-y-3">
+                    <div className="flex items-center gap-2 text-primary">
+                      <RefreshCw className="h-5 w-5" />
+                      <span className="text-sm font-medium">Additional Clarification Needed</span>
+                    </div>
+                    <p className="text-muted-foreground text-sm">
+                      Based on {colleagueName}&apos;s response, the AI has a few follow-up questions for you to ensure a complete and fair picture.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
+                      Final Clarification
+                    </h2>
+                    <p className="text-muted-foreground">
+                      These answers help the AI generate balanced resolution options for both sides.
+                    </p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="block font-medium text-foreground">
+                        {colleagueName} mentioned project requirements — were you aware of these before raising the concern?
+                      </label>
+                      <Textarea
+                        placeholder="Your response..."
+                        className="min-h-[100px] resize-none bg-card"
+                        value={clarificationResponses["awareness"] || ""}
+                        onChange={(e) => setClarificationResponses({ ...clarificationResponses, awareness: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block font-medium text-foreground">
+                        Is there anything else the AI should know before generating resolution options?
+                      </label>
+                      <Textarea
+                        placeholder="Any additional context..."
+                        className="min-h-[100px] resize-none bg-card"
+                        value={clarificationResponses["additional"] || ""}
+                        onChange={(e) => setClarificationResponses({ ...clarificationResponses, additional: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                    onClick={() => { setSelectedPersona("blake"); simulateAnalysis() }}
+                  >
+                    Complete & Generate Resolutions
+                    <Brain className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Default waiting: Blake hasn't responded yet */}
+              {analysisStep !== "clarification-karen" && (
+                <div className="space-y-8 text-center py-12">
+                  <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="h-10 w-10 text-primary" />
+                  </div>
+                  <div className="space-y-4">
+                    <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
+                      Case Submitted Successfully
+                    </h2>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      {colleagueName} has been notified. You&apos;ll receive an update once they provide their perspective.
+                    </p>
+                  </div>
+                  <div className="bg-secondary/50 rounded-lg border border-border p-4 max-w-md mx-auto">
+                    <p className="text-sm text-muted-foreground">
+                      In the demo, switch to {colleagueName}&apos;s perspective to continue the journey.
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    onClick={() => setSelectedPersona("blake")}
+                  >
+                    Switch to {colleagueName}&apos;s Perspective
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
@@ -854,18 +974,10 @@ width={150}
               />
             </Link>
             <div className="flex items-center gap-4">
-              {/* F1: Switch badge to Karen when she's answering the final clarification questions */}
-              {analysisStep === "clarification-karen" ? (
-                <Badge variant="outline" className="gap-1">
-                  <User className="h-3 w-3" />
-                  Karen (Initiator)
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="gap-1 border-accent text-accent">
-                  <Leaf className="h-3 w-3" />
-                  Blake (Responder)
-                </Badge>
-              )}
+              <Badge variant="outline" className="gap-1 border-accent text-accent">
+                <Leaf className="h-3 w-3" />
+                Blake (Responder)
+              </Badge>
               <Button variant="ghost" size="sm" onClick={() => setSelectedPersona(null)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Switch Role
@@ -993,7 +1105,10 @@ width={150}
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="block font-medium text-foreground">What is your understanding of the situation?</label>
+                  <label className="block font-medium text-foreground">
+                    What is your understanding of the situation?
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
                   <Textarea
                     placeholder="Describe what happened from your perspective..."
                     className="min-h-[120px] resize-none bg-card"
@@ -1048,7 +1163,10 @@ width={150}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block font-medium text-foreground">What outcome would you like to see?</label>
+                  <label className="block font-medium text-foreground">
+                    What outcome would you like to see?
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
                   <Textarea
                     placeholder="What would a fair resolution look like to you?"
                     className="min-h-[100px] resize-none bg-card"
@@ -1067,7 +1185,7 @@ width={150}
                   size="lg"
                   className="bg-accent hover:bg-accent/90 text-accent-foreground"
                   onClick={() => setBlakeStep("followup")}
-                  disabled={!blakeResponses.understanding}
+                  disabled={!blakeResponses.understanding || !blakeResponses.outcome}
                 >
                   Continue
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -1126,10 +1244,44 @@ width={150}
             </div>
           )}
 
-          {/* Blake Waiting / Analysis Flow */}
-          {blakeStep === "waiting" && (
+          {/* Blake Waiting — prompt to switch to Karen for final clarification */}
+          {blakeStep === "waiting" && analysisStep === "clarification-karen" && (
+            <div className="space-y-8 text-center py-12">
+              <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="h-10 w-10 text-accent" />
+              </div>
+              <div className="space-y-3">
+                <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
+                  Response Submitted
+                </h2>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Thanks, Blake. The AI has reviewed your response and has a few follow-up questions for Karen to complete the picture.
+                </p>
+              </div>
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 max-w-md mx-auto space-y-3">
+                <div className="flex items-center justify-center gap-2 text-primary">
+                  <RefreshCw className="h-4 w-4" />
+                  <span className="text-sm font-medium">Final Clarification Needed</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Switch to Karen&apos;s perspective so she can answer a couple of final questions before resolutions are generated.
+                </p>
+              </div>
+              <Button
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={() => setSelectedPersona("karen")}
+              >
+                Switch to Karen&apos;s Perspective
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          )}
+
+          {/* Blake Waiting / Analysis Flow (processing + verdict) */}
+          {blakeStep === "waiting" && analysisStep !== "clarification-karen" && (
             <>
-              {/* Clarification for Karen */}
+              {/* Clarification for Karen — kept here for legacy, but now lives in Karen's view */}
               {analysisStep === "clarification-karen" && (
                 <div className="space-y-8">
                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 space-y-4">
