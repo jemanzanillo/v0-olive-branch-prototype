@@ -1752,7 +1752,11 @@ width={150}
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Awaiting Response</Badge>
+                        {postVerdictState === "escalated" ? (
+                          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Under HR Review</Badge>
+                        ) : (
+                          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Awaiting Response</Badge>
+                        )}
                         <ArrowRight className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </div>
@@ -1912,7 +1916,11 @@ width={150}
                   </h2>
                   <p className="text-muted-foreground">Marketing Department</p>
                 </div>
-                <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Awaiting Response</Badge>
+                {mindyView === "full-disclosure" ? (
+                  <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Under HR Review</Badge>
+                ) : (
+                  <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Awaiting Response</Badge>
+                )}
               </div>
 
               {/* I1: Timeline at first fold */}
@@ -1924,11 +1932,16 @@ width={150}
                     { label: "Tone Analysis Complete", time: "Today, 9:43 AM", color: "bg-primary", done: true },
                     { label: "Party A Consent Given", time: "Today, 9:45 AM", color: "bg-primary", done: true },
                     { label: "Notification Sent to Party B", time: "Today, 9:45 AM — Awaiting response", color: "bg-yellow-500", done: false },
+                    ...(mindyView === "full-disclosure" ? [
+                      { label: "Mindy Protocol Activated", time: "Today, 10:12 AM", color: "bg-red-600", done: true },
+                      { label: "Full Disclosure Mode Enabled", time: "Today, 10:12 AM", color: "bg-red-600", done: true },
+                      { label: "HR Mediation In Progress", time: "Ongoing", color: "bg-red-500", done: false },
+                    ] : []),
                   ].map((event, i) => (
                     <div key={i} className="flex gap-4 items-start">
                       <div className="flex flex-col items-center">
                         <div className={`w-3 h-3 rounded-full ${event.color} shrink-0 mt-0.5`} />
-                        {i < 3 && <div className="w-px flex-1 bg-border mt-1 mb-0 h-6" />}
+                        {i < (mindyView === "full-disclosure" ? 6 : 3) && <div className="w-px flex-1 bg-border mt-1 mb-0 h-6" />}
                       </div>
                       <div>
                         <div className={`text-sm font-medium ${event.done ? "text-foreground" : "text-muted-foreground"}`}>{event.label}</div>
