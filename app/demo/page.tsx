@@ -32,11 +32,11 @@ import {
 } from "lucide-react"
 
 // Types
-type Persona = "karen" | "blake" | "bob"
-type KarenStep = "setup" | "questions" | "tone-review" | "consent" | "waiting"
-type BlakeStep = "notification" | "response" | "followup" | "waiting"
-type BobStep = "dashboard" | "case-detail"
-type AnalysisStep = "clarification-karen" | "processing" | "verdict"
+type Persona = "jaythan" | "joe" | "mindy"
+type JaythanStep = "setup" | "questions" | "tone-review" | "consent" | "waiting"
+type JoeStep = "notification" | "response" | "followup" | "waiting"
+type MindyStep = "dashboard" | "case-detail"
+type AnalysisStep = "clarification-jaythan" | "processing" | "verdict"
 
 interface ToneAnalysis {
   originalText: string
@@ -106,8 +106,8 @@ const keywordQuestions: Record<string, { question: string; placeholder: string }
 
 const availableKeywords = Object.keys(keywordQuestions).sort()
 
-// Dynamic follow-up questions for Blake based on Karen's input
-const generateBlakeFollowups = (karenResponses: Record<string, string>, keywords: string[]): { question: string; placeholder: string }[] => {
+// Dynamic follow-up questions for Joe based on Jaythan's input
+const generateJoeFollowups = (jaythanResponses: Record<string, string>, keywords: string[]): { question: string; placeholder: string }[] => {
   const followups: { question: string; placeholder: string }[] = []
   
   if (keywords.includes("Promotion Eligibility")) {
@@ -177,23 +177,23 @@ export default function DemoPage() {
   // Persona selection
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null)
   
-  // Karen's state
-  const [karenStep, setKarenStep] = useState<KarenStep>("setup")
+  // Jaythan's state
+  const [jaythanStep, setJaythanStep] = useState<JaythanStep>("setup")
   const [colleagueName, setColleagueName] = useState("")
   const [colleagueEmail, setColleagueEmail] = useState("")
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
-  const [karenResponses, setKarenResponses] = useState<Record<string, string>>({})
+  const [jaythanResponses, setJaythanResponses] = useState<Record<string, string>>({})
   const [currentQuestionPage, setCurrentQuestionPage] = useState(0)
   const [toneAnalysis, setToneAnalysis] = useState<ToneAnalysis | null>(null)
   const [consentGiven, setConsentGiven] = useState(false)
   
-  // Blake's state
-  const [blakeStep, setBlakeStep] = useState<BlakeStep>("notification")
-  const [blakeResponses, setBlakeResponses] = useState<Record<string, string>>({})
-  const [blakeFollowupResponses, setBlakeFollowupResponses] = useState<Record<string, string>>({})
+  // Joe's state
+  const [joeStep, setJoeStep] = useState<JoeStep>("notification")
+  const [joeResponses, setJoeResponses] = useState<Record<string, string>>({})
+  const [joeFollowupResponses, setJoeFollowupResponses] = useState<Record<string, string>>({})
   
-  // Bob's state
-  const [bobStep, setBobStep] = useState<BobStep>("dashboard")
+  // Mindy's state
+  const [mindyStep, setMindyStep] = useState<MindyStep>("dashboard")
   
   // Shared state
   const [analysisStep, setAnalysisStep] = useState<AnalysisStep | null>(null)
@@ -206,16 +206,16 @@ export default function DemoPage() {
   const [toneVersion, setToneVersion] = useState(0)
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null)
   const [evidenceFileError, setEvidenceFileError] = useState("")
-  const [verdictSelections, setVerdictSelections] = useState<{ karen: string | null; blake: string | null }>({ karen: null, blake: null })
+  const [verdictSelections, setVerdictSelections] = useState<{ jaythan: string | null; joe: string | null }>({ jaythan: null, joe: null })
   const [postVerdictState, setPostVerdictState] = useState<"selecting" | "consensus" | "deadlock" | "regenerating" | "escalated">("selecting")
   const [companyPolicy, setCompanyPolicy] = useState("")
   const [policyFile, setPolicyFile] = useState<File | null>(null)
   const [policySaved, setPolicySaved] = useState(false)
-  const [bobView, setBobView] = useState<"anonymized" | "full-disclosure">("anonymized")
-  const [karenEvidenceFile, setKarenEvidenceFile] = useState<File | null>(null)
-  const [karenEvidenceFileError, setKarenEvidenceFileError] = useState("")
+  const [mindyView, setMindyView] = useState<"anonymized" | "full-disclosure">("anonymized")
+  const [jaythanEvidenceFile, setJaythanEvidenceFile] = useState<File | null>(null)
+  const [jaythanEvidenceFileError, setJaythanEvidenceFileError] = useState("")
   const evidenceFileRef = useRef<HTMLInputElement>(null)
-  const karenEvidenceFileRef = useRef<HTMLInputElement>(null)
+  const jaythanEvidenceFileRef = useRef<HTMLInputElement>(null)
   const policyFileRef = useRef<HTMLInputElement>(null)
 
   // Get question pages grouped by topic
@@ -241,13 +241,13 @@ export default function DemoPage() {
   // Keep getDynamicQuestions for tone analysis (needs all questions flat)
   const getDynamicQuestions = () => getQuestionPages().flatMap(p => p.questions)
 
-  // Handle Karen's tone review submission
+  // Handle Jaythan's tone review submission
   const handleToneReview = () => {
-    const allText = Object.values(karenResponses).join(" ")
+    const allText = Object.values(jaythanResponses).join(" ")
     const analysis = analyzeTone(allText)
     setToneAnalysis(analysis)
     setToneVersion(0)
-    setKarenStep("tone-review")
+    setJaythanStep("tone-review")
   }
 
   // Generate another de-escalated version (demo variation)
@@ -278,21 +278,21 @@ export default function DemoPage() {
     setEvidenceFile(file)
   }
 
-  const handleKarenEvidenceFile = (file: File | null) => {
+  const handleJaythanEvidenceFile = (file: File | null) => {
     if (!file) return
     if (file.size > 10 * 1024 * 1024) {
-      setKarenEvidenceFileError("File exceeds 10 MB limit. Please choose a smaller file.")
-      setKarenEvidenceFile(null)
+      setJaythanEvidenceFileError("File exceeds 10 MB limit. Please choose a smaller file.")
+      setJaythanEvidenceFile(null)
       return
     }
-    setKarenEvidenceFileError("")
-    setKarenEvidenceFile(file)
+    setJaythanEvidenceFileError("")
+    setJaythanEvidenceFile(file)
   }
 
   // Handle consent and submission
   const handleConsentSubmit = () => {
     if (consentGiven) {
-      setKarenStep("waiting")
+      setJaythanStep("waiting")
     }
   }
 
@@ -349,7 +349,7 @@ width={150}
           <div className="grid md:grid-cols-3 gap-6">
             {/* Jaythan - Initiator */}
             <button
-              onClick={() => setSelectedPersona("karen")}
+              onClick={() => setSelectedPersona("jaythan")}
               className="group text-left bg-card rounded-xl border-2 border-border hover:border-primary p-6 transition-all hover:shadow-lg"
             >
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
@@ -368,7 +368,7 @@ width={150}
 
             {/* Joe - Responder */}
             <button
-              onClick={() => setSelectedPersona("blake")}
+              onClick={() => setSelectedPersona("joe")}
               className="group text-left bg-card rounded-xl border-2 border-border hover:border-primary p-6 transition-all hover:shadow-lg"
             >
               <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
@@ -387,7 +387,7 @@ width={150}
 
             {/* Mindy - Program Oversight */}
             <button
-              onClick={() => setSelectedPersona("bob")}
+              onClick={() => setSelectedPersona("mindy")}
               className="group text-left bg-card rounded-xl border-2 border-border hover:border-primary p-6 transition-all hover:shadow-lg"
             >
               <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center mb-4 group-hover:bg-secondary/80 transition-colors">
@@ -409,8 +409,8 @@ width={150}
     )
   }
 
-  // Karen's Journey
-  if (selectedPersona === "karen") {
+  // Jaythan's Journey
+  if (selectedPersona === "jaythan") {
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b border-border bg-background/95 backdrop-blur">
@@ -443,19 +443,19 @@ width={150}
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-foreground">Your Progress</span>
               <span className="text-sm text-muted-foreground">
-                {karenStep === "setup" && "Step 1: Setup"}
-                {karenStep === "questions" && "Step 2: Your Perspective"}
-                {karenStep === "tone-review" && "Step 3: Tone Review"}
-                {karenStep === "consent" && "Step 4: Review & Consent"}
-                {karenStep === "waiting" && "Case Submitted"}
+                {jaythanStep === "setup" && "Step 1: Setup"}
+                {jaythanStep === "questions" && "Step 2: Your Perspective"}
+                {jaythanStep === "tone-review" && "Step 3: Tone Review"}
+                {jaythanStep === "consent" && "Step 4: Review & Consent"}
+                {jaythanStep === "waiting" && "Case Submitted"}
               </span>
             </div>
             <Progress 
               value={
-                karenStep === "setup" ? 20 : 
-                karenStep === "questions" ? 40 : 
-                karenStep === "tone-review" ? 60 : 
-                karenStep === "consent" ? 80 : 100
+                jaythanStep === "setup" ? 20 : 
+                jaythanStep === "questions" ? 40 : 
+                jaythanStep === "tone-review" ? 60 : 
+                jaythanStep === "consent" ? 80 : 100
               } 
               className="h-2" 
             />
@@ -464,7 +464,7 @@ width={150}
 
         <main className="container mx-auto px-4 py-12 max-w-3xl">
           {/* Step 1: Setup */}
-          {karenStep === "setup" && (
+          {jaythanStep === "setup" && (
             <div className="space-y-8">
               <div className="space-y-2">
                 <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
@@ -548,7 +548,7 @@ width={150}
                 <Button 
                   size="lg" 
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={() => { setCurrentQuestionPage(0); setKarenStep("questions") }}
+                  onClick={() => { setCurrentQuestionPage(0); setJaythanStep("questions") }}
                   disabled={!colleagueName || !colleagueEmail || !colleagueEmailValid || selectedKeywords.length === 0}
                 >
                   Continue
@@ -559,15 +559,15 @@ width={150}
           )}
 
           {/* Step 2: Dynamic Questions (paginated by topic) */}
-          {karenStep === "questions" && (() => {
+          {jaythanStep === "questions" && (() => {
             const pages = getQuestionPages()
             const page = pages[currentQuestionPage]
             const isFirst = currentQuestionPage === 0
             const isLast = currentQuestionPage === pages.length - 1
             // Page 0: both "What happened?" and "What outcome do you want?" are mandatory
             const pageAnswered = currentQuestionPage === 0
-              ? !!(karenResponses["What happened?"]?.trim() && karenResponses["What outcome do you want?"]?.trim())
-              : page.questions.some(q => karenResponses[q.question]?.trim())
+              ? !!(jaythanResponses["What happened?"]?.trim() && jaythanResponses["What outcome do you want?"]?.trim())
+              : page.questions.some(q => jaythanResponses[q.question]?.trim())
             return (
               <div className="space-y-8">
                 <div className="space-y-2">
@@ -616,8 +616,8 @@ width={150}
                         <Textarea
                           placeholder={q.placeholder}
                           className="min-h-[100px] resize-none bg-card"
-                          value={karenResponses[q.question] || ""}
-                          onChange={(e) => setKarenResponses({ ...karenResponses, [q.question]: e.target.value })}
+                          value={jaythanResponses[q.question] || ""}
+                          onChange={(e) => setJaythanResponses({ ...jaythanResponses, [q.question]: e.target.value })}
                         />
                       </div>
                       )
@@ -631,18 +631,18 @@ width={150}
                           <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">Optional</span>
                         </div>
                         <input
-                          ref={karenEvidenceFileRef}
+                          ref={jaythanEvidenceFileRef}
                           type="file"
                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                           className="hidden"
-                          onChange={(e) => handleKarenEvidenceFile(e.target.files?.[0] ?? null)}
+                          onChange={(e) => handleJaythanEvidenceFile(e.target.files?.[0] ?? null)}
                         />
-                        {karenEvidenceFile ? (
+                        {jaythanEvidenceFile ? (
                           <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
                             <FileText className="h-4 w-4 text-primary shrink-0" />
-                            <span className="text-sm text-foreground flex-1 truncate">{karenEvidenceFile.name}</span>
+                            <span className="text-sm text-foreground flex-1 truncate">{jaythanEvidenceFile.name}</span>
                             <button
-                              onClick={() => { setKarenEvidenceFile(null); if (karenEvidenceFileRef.current) karenEvidenceFileRef.current.value = "" }}
+                              onClick={() => { setJaythanEvidenceFile(null); if (jaythanEvidenceFileRef.current) jaythanEvidenceFileRef.current.value = "" }}
                               className="text-muted-foreground hover:text-foreground transition-colors"
                             >
                               <X className="h-4 w-4" />
@@ -650,14 +650,14 @@ width={150}
                           </div>
                         ) : (
                           <button
-                            onClick={() => karenEvidenceFileRef.current?.click()}
+                            onClick={() => jaythanEvidenceFileRef.current?.click()}
                             className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all"
                           >
                             <Upload className="h-4 w-4" />
                             Attach supporting evidence (PDF, Word, image — max 10 MB)
                           </button>
                         )}
-                        {karenEvidenceFileError && <p className="text-xs text-red-500">{karenEvidenceFileError}</p>}
+                        {jaythanEvidenceFileError && <p className="text-xs text-red-500">{jaythanEvidenceFileError}</p>}
                       </div>
                     )}
                   </div>
@@ -666,7 +666,7 @@ width={150}
                 <div className="flex justify-between">
                   <Button
                     variant="outline"
-                    onClick={() => isFirst ? setKarenStep("setup") : setCurrentQuestionPage(p => p - 1)}
+                    onClick={() => isFirst ? setJaythanStep("setup") : setCurrentQuestionPage(p => p - 1)}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
@@ -698,7 +698,7 @@ width={150}
           })()}
 
           {/* Step 3: Tone Review */}
-          {karenStep === "tone-review" && toneAnalysis && (
+          {jaythanStep === "tone-review" && toneAnalysis && (
             <div className="space-y-8">
               <div className="space-y-2">
                 <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
@@ -800,14 +800,14 @@ width={150}
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => { setCurrentQuestionPage(getQuestionPages().length - 1); setKarenStep("questions") }}>
+                <Button variant="outline" onClick={() => { setCurrentQuestionPage(getQuestionPages().length - 1); setJaythanStep("questions") }}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Edit Responses
                 </Button>
                 <Button
                   size="lg"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={() => setKarenStep("consent")}
+                  onClick={() => setJaythanStep("consent")}
                 >
                   Continue to Consent
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -817,7 +817,7 @@ width={150}
           )}
 
           {/* Step 4: Consent */}
-          {karenStep === "consent" && toneAnalysis && (
+          {jaythanStep === "consent" && toneAnalysis && (
             <div className="space-y-8">
               <div className="space-y-2">
                 <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
@@ -853,7 +853,7 @@ width={150}
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setKarenStep("tone-review")}>
+                <Button variant="outline" onClick={() => setJaythanStep("tone-review")}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
@@ -870,11 +870,11 @@ width={150}
             </div>
           )}
 
-          {/* Waiting State — two modes depending on whether Blake has responded */}
-          {karenStep === "waiting" && (
+          {/* Waiting State — two modes depending on whether Joe has responded */}
+          {jaythanStep === "waiting" && (
             <>
-              {/* Final clarification: shown after Blake responds and switches back to Karen */}
-              {analysisStep === "clarification-karen" && (
+              {/* Final clarification: shown after Joe responds and switches back to Jaythan */}
+              {analysisStep === "clarification-jaythan" && (
                 <div className="space-y-8">
                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 space-y-3">
                     <div className="flex items-center gap-2 text-primary">
@@ -923,7 +923,7 @@ width={150}
                   <Button
                     size="lg"
                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                    onClick={() => { setSelectedPersona("blake"); simulateAnalysis() }}
+                    onClick={() => { setSelectedPersona("joe"); simulateAnalysis() }}
                   >
                     Complete & Generate Resolutions
                     <Brain className="ml-2 h-5 w-5" />
@@ -931,8 +931,8 @@ width={150}
                 </div>
               )}
 
-              {/* Default waiting: Blake hasn't responded yet */}
-              {analysisStep !== "clarification-karen" && (
+              {/* Default waiting: Joe hasn't responded yet */}
+              {analysisStep !== "clarification-jaythan" && (
                 <div className="space-y-8 text-center py-12">
                   <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="h-10 w-10 text-primary" />
@@ -953,7 +953,7 @@ width={150}
                   <Button
                     size="lg"
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                    onClick={() => setSelectedPersona("blake")}
+                    onClick={() => setSelectedPersona("joe")}
                   >
                     Switch to {colleagueName}&apos;s Perspective
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -967,9 +967,9 @@ width={150}
     )
   }
 
-  // Blake's Journey
-  if (selectedPersona === "blake") {
-    const blakeFollowups = generateBlakeFollowups(karenResponses, selectedKeywords.length > 0 ? selectedKeywords : ["Promotion Eligibility"])
+  // Joe's Journey
+  if (selectedPersona === "joe") {
+    const joeFollowups = generateJoeFollowups(jaythanResponses, selectedKeywords.length > 0 ? selectedKeywords : ["Promotion Eligibility"])
     const regeneratedOutcomeSet = postVerdictState === "regenerating"
     
     return (
@@ -1000,7 +1000,7 @@ width={150}
 
         <main className="container mx-auto px-4 py-12 max-w-3xl">
           {/* Notification */}
-          {blakeStep === "notification" && (
+          {joeStep === "notification" && (
             <div className="space-y-6">
               {/* Demo context note */}
               <div className="bg-secondary/50 border border-border rounded-lg px-4 py-2 text-xs text-muted-foreground text-center">
@@ -1069,7 +1069,7 @@ width={150}
                   <Button
                     size="lg"
                     className="w-full bg-accent hover:bg-accent/90 text-accent-foreground gap-2"
-                    onClick={() => setBlakeStep("response")}
+                    onClick={() => setJoeStep("response")}
                   >
                     <Globe className="h-5 w-5" />
                     Open in OliveBranch
@@ -1081,7 +1081,7 @@ width={150}
           )}
 
           {/* Response */}
-          {blakeStep === "response" && (
+          {joeStep === "response" && (
             <div className="space-y-8">
               <div className="space-y-2">
                 <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
@@ -1124,8 +1124,8 @@ width={150}
                   <Textarea
                     placeholder="Describe what happened from your perspective..."
                     className="min-h-[120px] resize-none bg-card"
-                    value={blakeResponses["understanding"] || ""}
-                    onChange={(e) => setBlakeResponses({ ...blakeResponses, understanding: e.target.value })}
+                    value={joeResponses["understanding"] || ""}
+                    onChange={(e) => setJoeResponses({ ...joeResponses, understanding: e.target.value })}
                   />
                 </div>
 
@@ -1138,8 +1138,8 @@ width={150}
                   <Textarea
                     placeholder="Describe any supporting evidence: reviews, milestones, workload records, department criteria..."
                     className="min-h-[80px] resize-none bg-card"
-                    value={blakeResponses["evidence"] || ""}
-                    onChange={(e) => setBlakeResponses({ ...blakeResponses, evidence: e.target.value })}
+                    value={joeResponses["evidence"] || ""}
+                    onChange={(e) => setJoeResponses({ ...joeResponses, evidence: e.target.value })}
                   />
                   {/* File upload area */}
                   <div>
@@ -1182,22 +1182,22 @@ width={150}
                   <Textarea
                     placeholder="What would a fair resolution look like to you?"
                     className="min-h-[100px] resize-none bg-card"
-                    value={blakeResponses["outcome"] || ""}
-                    onChange={(e) => setBlakeResponses({ ...blakeResponses, outcome: e.target.value })}
+                    value={joeResponses["outcome"] || ""}
+                    onChange={(e) => setJoeResponses({ ...joeResponses, outcome: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setBlakeStep("notification")}>
+                <Button variant="outline" onClick={() => setJoeStep("notification")}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
                 <Button
                   size="lg"
                   className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                  onClick={() => setBlakeStep("followup")}
-                  disabled={!blakeResponses.understanding || !blakeResponses.outcome}
+                  onClick={() => setJoeStep("followup")}
+                  disabled={!joeResponses.understanding || !joeResponses.outcome}
                 >
                   Continue
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -1207,7 +1207,7 @@ width={150}
           )}
 
           {/* AI Follow-up Questions */}
-          {blakeStep === "followup" && (
+          {joeStep === "followup" && (
             <div className="space-y-8">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-primary">
@@ -1223,21 +1223,21 @@ width={150}
               </div>
 
               <div className="space-y-6">
-                {blakeFollowups.map((q, index) => (
+                {joeFollowups.map((q, index) => (
                   <div key={index} className="space-y-2">
                     <label className="block font-medium text-foreground">{q.question}</label>
                     <Textarea
                       placeholder={q.placeholder}
                       className="min-h-[100px] resize-none bg-card"
-                      value={blakeFollowupResponses[q.question] || ""}
-                      onChange={(e) => setBlakeFollowupResponses({ ...blakeFollowupResponses, [q.question]: e.target.value })}
+                      value={joeFollowupResponses[q.question] || ""}
+                      onChange={(e) => setjoeFollowupResponses({ ...joeFollowupResponses, [q.question]: e.target.value })}
                     />
                   </div>
                 ))}
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setBlakeStep("response")}>
+                <Button variant="outline" onClick={() => setJoeStep("response")}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
@@ -1245,8 +1245,8 @@ width={150}
                   size="lg" 
                   className="bg-accent hover:bg-accent/90 text-accent-foreground"
                   onClick={() => {
-                    setBlakeStep("waiting")
-                    setAnalysisStep("clarification-karen")
+                    setJoeStep("waiting")
+                    setAnalysisStep("clarification-jaythan")
                   }}
                 >
                   Submit Response
@@ -1256,8 +1256,8 @@ width={150}
             </div>
           )}
 
-          {/* Blake Waiting — prompt to switch to Karen for final clarification */}
-          {blakeStep === "waiting" && analysisStep === "clarification-karen" && (
+          {/* Joe Waiting — prompt to switch to Jaythan for final clarification */}
+          {joeStep === "waiting" && analysisStep === "clarification-jaythan" && (
             <div className="space-y-8 text-center py-12">
               <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-10 w-10 text-accent" />
@@ -1282,7 +1282,7 @@ width={150}
               <Button
                 size="lg"
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                onClick={() => setSelectedPersona("karen")}
+                onClick={() => setSelectedPersona("jaythan")}
               >
                 Switch to Jaythan&apos;s Perspective
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -1290,11 +1290,11 @@ width={150}
             </div>
           )}
 
-          {/* Blake Waiting / Analysis Flow (processing + verdict) */}
-          {blakeStep === "waiting" && analysisStep !== "clarification-karen" && (
+          {/* Joe Waiting / Analysis Flow (processing + verdict) */}
+          {joeStep === "waiting" && analysisStep !== "clarification-jaythan" && (
             <>
-              {/* Clarification for Karen — kept here for legacy, but now lives in Karen's view */}
-              {analysisStep === "clarification-karen" && (
+              {/* Clarification for Jaythan — kept here for legacy, but now lives in Jaythan's view */}
+              {analysisStep === "clarification-jaythan" && (
                 <div className="space-y-8">
                   <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 space-y-4">
                     <div className="flex items-center gap-2 text-primary">
@@ -1462,7 +1462,7 @@ width={150}
                           <p className="text-sm text-muted-foreground">Ask the AI to produce a new set of resolution options based on the full context.</p>
                         </button>
                         <button
-                          onClick={() => { setPostVerdictState("escalated"); setBobView("full-disclosure") }}
+                          onClick={() => { setPostVerdictState("escalated"); setMindyView("full-disclosure") }}
                           className="bg-card rounded-xl border-2 border-border hover:border-red-300 p-6 text-left transition-all space-y-2"
                         >
                           <AlertTriangle className="h-6 w-6 text-red-500" />
@@ -1515,7 +1515,7 @@ width={150}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                         {/* Outcome A */}
                         <div className={`relative bg-card rounded-xl border-2 p-5 transition-all flex flex-col gap-4 ${
-                          verdictSelections.karen === "A" ? "border-primary shadow-lg" : "border-border"
+                          verdictSelections.jaythan === "A" ? "border-primary shadow-lg" : "border-border"
                         }`}>
                           <div className="flex items-start gap-3">
                             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -1539,22 +1539,22 @@ width={150}
                           </div>
                           <Button
                             size="sm"
-                            className={verdictSelections.karen === "A" ? "bg-primary text-primary-foreground w-full" : "w-full"}
-                            variant={verdictSelections.karen === "A" ? "default" : "outline"}
+                            className={verdictSelections.jaythan === "A" ? "bg-primary text-primary-foreground w-full" : "w-full"}
+                            variant={verdictSelections.jaythan === "A" ? "default" : "outline"}
                             onClick={() => {
-                              setVerdictSelections({ karen: "A", blake: "B" })
+                              setVerdictSelections({ jaythan: "A", joe: "B" })
                               setSelectedVerdict("A")
                               setTimeout(() => setPostVerdictState("deadlock"), 1200)
                             }}
-                            disabled={!!verdictSelections.karen}
+                            disabled={!!verdictSelections.jaythan}
                           >
-                            {verdictSelections.karen === "A" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome A"}
+                            {verdictSelections.jaythan === "A" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome A"}
                           </Button>
                         </div>
 
                         {/* Outcome B */}
                         <div className={`relative bg-card rounded-xl border-2 p-5 transition-all flex flex-col gap-4 ${
-                          verdictSelections.karen === "B" ? "border-primary shadow-lg" : "border-border"
+                          verdictSelections.jaythan === "B" ? "border-primary shadow-lg" : "border-border"
                         }`}>
                           <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">
                             Recommended
@@ -1581,22 +1581,22 @@ width={150}
                           </div>
                           <Button
                             size="sm"
-                            className={verdictSelections.karen === "B" ? "bg-primary text-primary-foreground w-full" : "w-full"}
-                            variant={verdictSelections.karen === "B" ? "default" : "outline"}
+                            className={verdictSelections.jaythan === "B" ? "bg-primary text-primary-foreground w-full" : "w-full"}
+                            variant={verdictSelections.jaythan === "B" ? "default" : "outline"}
                             onClick={() => {
-                              setVerdictSelections({ karen: "B", blake: "B" })
+                              setVerdictSelections({ jaythan: "B", joe: "B" })
                               setSelectedVerdict("B")
                               setTimeout(() => setPostVerdictState("consensus"), 1200)
                             }}
-                            disabled={!!verdictSelections.karen}
+                            disabled={!!verdictSelections.jaythan}
                           >
-                            {verdictSelections.karen === "B" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome B"}
+                            {verdictSelections.jaythan === "B" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome B"}
                           </Button>
                         </div>
 
                         {/* Outcome C */}
                         <div className={`relative bg-card rounded-xl border-2 p-5 transition-all flex flex-col gap-4 ${
-                          verdictSelections.karen === "C" ? "border-primary shadow-lg" : "border-border"
+                          verdictSelections.jaythan === "C" ? "border-primary shadow-lg" : "border-border"
                         }`}>
                           <div className="flex items-start gap-3">
                             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -1620,22 +1620,22 @@ width={150}
                           </div>
                           <Button
                             size="sm"
-                            className={verdictSelections.karen === "C" ? "bg-primary text-primary-foreground w-full" : "w-full"}
-                            variant={verdictSelections.karen === "C" ? "default" : "outline"}
+                            className={verdictSelections.jaythan === "C" ? "bg-primary text-primary-foreground w-full" : "w-full"}
+                            variant={verdictSelections.jaythan === "C" ? "default" : "outline"}
                             onClick={() => {
-                              setVerdictSelections({ karen: "C", blake: "B" })
+                              setVerdictSelections({ jaythan: "C", joe: "B" })
                               setSelectedVerdict("C")
                               setTimeout(() => setPostVerdictState("deadlock"), 1200)
                             }}
-                            disabled={!!verdictSelections.karen}
+                            disabled={!!verdictSelections.jaythan}
                           >
-                            {verdictSelections.karen === "C" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome C"}
+                            {verdictSelections.jaythan === "C" ? <><CheckCircle2 className="h-4 w-4 mr-1" />Accepted</> : "Accept Outcome C"}
                           </Button>
                         </div>
                       </div>
 
                       {/* Reject All → Deadlock */}
-                      {!verdictSelections.karen && (
+                      {!verdictSelections.jaythan && (
                         <div className="flex justify-center">
                           <Button
                             variant="ghost"
@@ -1648,8 +1648,8 @@ width={150}
                         </div>
                       )}
 
-                      {/* Waiting for Blake simulation */}
-                      {verdictSelections.karen && postVerdictState === "selecting" && (
+                      {/* Waiting for Joe simulation */}
+                      {verdictSelections.jaythan && postVerdictState === "selecting" && (
                         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground animate-pulse">
                           <RefreshCw className="h-4 w-4" />
                           Waiting for Joe&apos;s response…
@@ -1666,8 +1666,8 @@ width={150}
     )
   }
 
-  // Bob's Journey (HR Oversight)
-  if (selectedPersona === "bob") {
+  // Mindy's Journey (HR Oversight)
+  if (selectedPersona === "mindy") {
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b border-border bg-background/95 backdrop-blur">
@@ -1696,7 +1696,7 @@ width={150}
 
         <main className="container mx-auto px-4 py-12 max-w-5xl">
           {/* Dashboard */}
-          {bobStep === "dashboard" && (
+          {mindyStep === "dashboard" && (
             <div className="space-y-8">
               <div className="space-y-2">
                 <h2 className="font-serif text-2xl md:text-3xl font-semibold text-foreground">
@@ -1733,7 +1733,7 @@ width={150}
                 <div className="space-y-3">
                   {/* Case 1 - Current demo case */}
                   <button 
-                    onClick={() => setBobStep("case-detail")}
+                    onClick={() => setMindyStep("case-detail")}
                     className="w-full text-left bg-card rounded-lg border border-border p-4 hover:border-primary/30 transition-all"
                   >
                     <div className="flex items-center justify-between">
@@ -1882,15 +1882,15 @@ width={150}
           )}
 
           {/* Case Detail */}
-          {bobStep === "case-detail" && (
+          {mindyStep === "case-detail" && (
             <div className="space-y-8">
-              <Button variant="ghost" onClick={() => setBobStep("dashboard")}>
+              <Button variant="ghost" onClick={() => setMindyStep("dashboard")}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
 
               {/* J1: Full Disclosure banner when Mindy Protocol is active */}
-              {bobView === "full-disclosure" && (
+              {mindyView === "full-disclosure" && (
                 <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                   <div>
@@ -1960,7 +1960,7 @@ width={150}
               <div className="bg-card rounded-xl border border-border p-6 space-y-6">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Shield className="h-4 w-4 text-muted-foreground" />
-                  {bobView === "full-disclosure"
+                  {mindyView === "full-disclosure"
                     ? <span className="text-red-600">Full Disclosure — Mindy Protocol Active</span>
                     : <span className="text-muted-foreground">Anonymized View — Identities Protected</span>
                   }
@@ -1970,9 +1970,9 @@ width={150}
                   {/* Party A */}
                   <div className="space-y-3">
                     <h4 className="font-medium text-foreground">
-                      {bobView === "full-disclosure" ? "Jaythan (Initiator)" : "Party A (Initiator)"}
+                      {mindyView === "full-disclosure" ? "Jaythan (Initiator)" : "Party A (Initiator)"}
                     </h4>
-                    {bobView === "full-disclosure" ? (
+                    {mindyView === "full-disclosure" ? (
                       <div className="bg-secondary/50 rounded-lg p-4 space-y-1">
                         <p className="text-sm text-foreground leading-relaxed">
                           I believe my current workload and outcomes align with Associate expectations, but my title and salary do not reflect that level of contribution.
@@ -1993,9 +1993,9 @@ width={150}
                   {/* Party B */}
                   <div className="space-y-3">
                     <h4 className="font-medium text-foreground">
-                      {bobView === "full-disclosure" ? "Joe (Responder)" : "Party B (Responder)"}
+                      {mindyView === "full-disclosure" ? "Joe (Responder)" : "Party B (Responder)"}
                     </h4>
-                    {bobView === "full-disclosure" ? (
+                    {mindyView === "full-disclosure" ? (
                       <div className="bg-secondary/50 rounded-lg p-4">
                         <p className="text-sm text-foreground leading-relaxed">
                           I understand the frustration, but my role reflects years of tenure and department leadership responsibilities that are not always visible in day-to-day teaching output.
