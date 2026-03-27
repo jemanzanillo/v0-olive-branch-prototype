@@ -259,11 +259,17 @@ export default function DemoPage() {
       " Finding a mutually agreeable path forward is the goal here.",
     ]
     const next = (toneVersion + 1) % variants.length
+    const nextRefined = toneAnalysis.refinedText.replace(/ I believe.*|I am confident.*|Finding a mutually.*/, "").trimEnd() + variants[next]
     setToneVersion(next)
     setToneAnalysis({
       ...toneAnalysis,
-      refinedText: toneAnalysis.refinedText.replace(/ I believe.*|I am confident.*|Finding a mutually.*/, "").trimEnd() + variants[next],
+      originalText: nextRefined,
+      refinedText: nextRefined,
+      flaggedPhrases: [],
+      overallTone: "professional",
     })
+    // Replace the primary narrative input so regenerated tone becomes the default text.
+    setKarenResponses(prev => ({ ...prev, ["What happened?"]: nextRefined }))
   }
 
   // Handle evidence file selection (10 MB limit)
@@ -483,7 +489,7 @@ width={150}
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-foreground">Colleague&apos;s Name</label>
                     <Input
-                      placeholder="e.g. Joe Ramirez"
+                      placeholder="e.g. Joe La Com"
                       value={colleagueName}
                       onChange={(e) => setColleagueName(e.target.value)}
                     />
@@ -970,6 +976,7 @@ width={150}
   // Blake's Journey
   if (selectedPersona === "blake") {
     const blakeFollowups = generateBlakeFollowups(karenResponses, selectedKeywords.length > 0 ? selectedKeywords : ["Promotion Eligibility"])
+    const regeneratedOutcomeSet = postVerdictState === "regenerating"
     
     return (
       <div className="min-h-screen bg-background">
@@ -1521,11 +1528,19 @@ width={150}
                               <span className="font-serif font-bold text-primary text-sm">A</span>
                             </div>
                             <div className="flex-1">
-                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">Logic Favors Jaythan</h3>
+                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">
+                                {regeneratedOutcomeSet ? "Accelerated Promotion Bridge" : "Logic Favors Jaythan"}
+                              </h3>
                               <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                                Workload and impact records suggest Jaythan is already operating at an Associate level while still on an adjunct contract.
+                                {regeneratedOutcomeSet
+                                  ? "Evidence supports piloting Jaythan in Associate-level duties for one term with immediate compensation alignment checkpoints."
+                                  : "Workload and impact records suggest Jaythan is already operating at an Associate level while still on an adjunct contract."}
                               </p>
-                              <div className="text-xs text-primary font-medium">Suggested: salary adjustment and bridge role toward Associate</div>
+                              <div className="text-xs text-primary font-medium">
+                                {regeneratedOutcomeSet
+                                  ? "Suggested: 90-day bridge plan with review milestones"
+                                  : "Suggested: salary adjustment and bridge role toward Associate"}
+                              </div>
                             </div>
                           </div>
                           <Button
@@ -1555,11 +1570,19 @@ width={150}
                               <Scale className="h-4 w-4 text-primary-foreground" />
                             </div>
                             <div className="flex-1">
-                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">The Middle Ground</h3>
+                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">
+                                {regeneratedOutcomeSet ? "Structured Co-Leadership Trial" : "The Middle Ground"}
+                              </h3>
                               <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                                Both professors are key to the degree program: Joe contributes tenure-based stability while Jaythan drives current output momentum.
+                                {regeneratedOutcomeSet
+                                  ? "Both parties co-lead a capped-scope department initiative while promotion criteria and compensation inputs are evaluated transparently."
+                                  : "Both professors are key to the degree program: Joe contributes tenure-based stability while Jaythan drives current output momentum."}
                               </p>
-                              <div className="text-xs text-primary font-medium">Suggested: shared initiative + mentorship toward next promotion cycle</div>
+                              <div className="text-xs text-primary font-medium">
+                                {regeneratedOutcomeSet
+                                  ? "Suggested: shared leadership charter + biweekly review with Mindy"
+                                  : "Suggested: shared initiative + mentorship toward next promotion cycle"}
+                              </div>
                             </div>
                           </div>
                           <Button
@@ -1586,11 +1609,19 @@ width={150}
                               <span className="font-serif font-bold text-primary text-sm">C</span>
                             </div>
                             <div className="flex-1">
-                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">Logic Favors Joe</h3>
+                              <h3 className="font-serif text-base font-semibold text-foreground mb-1">
+                                {regeneratedOutcomeSet ? "Tenure-Priority With Guaranteed Pathway" : "Logic Favors Joe"}
+                              </h3>
                               <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                                Joe&apos;s tenure-linked responsibilities and institutional tasks justify the current role decision under existing program criteria.
+                                {regeneratedOutcomeSet
+                                  ? "Joe retains the current role based on tenure scope, while Jaythan receives a dated pathway with explicit promotion and salary checkpoints."
+                                  : "Joe&apos;s tenure-linked responsibilities and institutional tasks justify the current role decision under existing program criteria."}
                               </p>
-                              <div className="text-xs text-primary font-medium">Suggested: transparent promotion metrics for Jaythan</div>
+                              <div className="text-xs text-primary font-medium">
+                                {regeneratedOutcomeSet
+                                  ? "Suggested: signed roadmap with target dates and measurable criteria"
+                                  : "Suggested: transparent promotion metrics for Jaythan"}
+                              </div>
                             </div>
                           </div>
                           <Button
