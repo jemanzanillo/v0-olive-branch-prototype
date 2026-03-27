@@ -254,16 +254,15 @@ export default function DemoPage() {
   const handleRegenerateTone = () => {
     if (!toneAnalysis) return
     const variants = [
-      " I believe a constructive conversation would help both parties reach a fair understanding.",
-      " I am confident we can resolve this professionally with open dialogue.",
-      " Finding a mutually agreeable path forward is the goal here.",
+      "There is a concern regarding role distribution and compensation alignment. I would like to review workload, title expectations, and salary benchmarks in a constructive way.",
+      "I want to discuss how current responsibilities, performance, and growth expectations align with promotion pathways and compensation in the department.",
+      "My goal is a professional conversation about workload parity, recognition, and a transparent path for promotion and salary review.",
     ]
     const next = (toneVersion + 1) % variants.length
-    const nextRefined = toneAnalysis.refinedText.replace(/ I believe.*|I am confident.*|Finding a mutually.*/, "").trimEnd() + variants[next]
     setToneVersion(next)
     setToneAnalysis({
       ...toneAnalysis,
-      refinedText: nextRefined,
+      refinedText: variants[next],
     })
   }
 
